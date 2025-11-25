@@ -81,12 +81,13 @@ public void ReloadSpriteFrameImages(ref WaddleSprite waddleSprite) {
 	{ waddleSprite.Frames[i].Image = new(spriteDirectory + "\\" + i.ToString() + ".png", MAGICK_READSETTINGS); }
 }
 
-public MagickImage GetWaddleImageWithPadding(WaddleSpriteFrame frame) {
-	MagickImage returningImage = new(MagickColors.Transparent, (uint)frame.BoundWidth, (uint)frame.BoundHeight);
-	returningImage.Composite(frame.Image, frame.TargetX, frame.TargetY, CompositeOperator.Copy);
-	
-	return returningImage;
-}
+// Unused Function, breaks the whole tool that loads ts anyway so whateverr bye bye
+//public MagickImage GetWaddleImageWithPadding(WaddleSpriteFrame frame) {
+//	MagickImage returningImage = new(MagickColors.Transparent, (uint)frame.BoundWidth, (uint)frame.BoundHeight);
+//	returningImage.Composite(frame.Image, frame.TargetX, frame.TargetY, CompositeOperator.Copy);
+//	
+//	return returningImage;
+//}
 
 public BitmapImage MagickToBitmapImage(MagickImage magickImg) {
 	BitmapImage bitmapImg = new();
