@@ -1,6 +1,6 @@
-#load "..\..\WaddleTools\Scripts\Constants.csx"
-#load "..\..\WaddleTools\Scripts\WaddleSprite.csx"
-#load "..\..\WaddleTools\Scripts\SpriteEditor.csx"
+#load ".\Internal\Scripts\Constants.csx"
+#load ".\Internal\Scripts\WaddleSprite.csx"
+#load ".\Internal\Scripts\SpriteEditor.csx"
 
 using System.Windows;
 using System.Windows.Controls;
@@ -11,7 +11,7 @@ using UndertaleModLib.Util;
 
 List<WaddleSprite> GraphicsSharpQueue = new();
 
-Window GraphicsSharpWindow = (Window)LoadXaml("Internal/ImportGraphicsSharp.xaml")); 
+Window GraphicsSharpWindow = (Window)LoadXaml(Path.Combine(ASSETS_DIR, "ImportGraphicsSharp.xaml")); 
 Button QueueGraphicsButton = (Button)GraphicsSharpWindow.FindName("QueueGraphics");
 Button DequeueGraphicsButton = (Button)GraphicsSharpWindow.FindName("DequeueGraphics");
 ListView VisualQueue = (ListView)GraphicsSharpWindow.FindName("VisualQueue");
