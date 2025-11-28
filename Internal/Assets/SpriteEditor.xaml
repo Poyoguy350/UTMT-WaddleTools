@@ -1,0 +1,300 @@
+<Window x:Class="System.Windows.Window"
+		xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+		xmlns:local="clr-namespace:UndertaleModTool;assembly=UndertaleModTool"
+		xmlns:undertale="clr-namespace:UndertaleModLib.Models;assembly=UndertaleModLib"
+		xmlns:lib="clr-namespace:UndertaleModLib.Util;assembly=UndertaleModLib"
+        xmlns:scol="clr-namespace:System.Collections;assembly=mscorlib"
+        xmlns:cmod="clr-namespace:System.ComponentModel;assembly=WindowsBase"
+		xmlns:sys="clr-namespace:System;assembly=mscorlib"
+        mc:Ignorable="d" Height="800" Width="1200" MinWidth="800" MinHeight="600">
+	<Window.Title>
+		<MultiBinding StringFormat="{}{0} - Editing: {1}">
+			<Binding Path="Title" />
+			<Binding Path="Sprite.Name" FallbackValue="???" />
+		</MultiBinding>
+	</Window.Title>
+	<Window.Resources>
+        <ResourceDictionary>
+            <ObjectDataProvider MethodName="GetValues" ObjectType="{x:Type sys:Enum}" x:Key="AnimSpeedType">
+                <ObjectDataProvider.MethodParameters>
+                    <x:Type TypeName="undertale:AnimSpeedType" />
+                </ObjectDataProvider.MethodParameters>
+            </ObjectDataProvider>
+        </ResourceDictionary>
+    </Window.Resources>
+    <Grid>
+		<Grid.RowDefinitions>
+			<RowDefinition Height="2*" />
+			<RowDefinition Height="Auto" />
+			<RowDefinition Height="100*" />
+			<RowDefinition Height="6*" />
+		</Grid.RowDefinitions>
+		
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="4*" />
+			<ColumnDefinition Width="100*" /> <!-- MinWidth="550" -->
+
+			<!--
+			<ColumnDefinition Width="0.75*" />
+			<ColumnDefinition Width="30*" MinWidth="150" />
+			-->
+			
+			<ColumnDefinition Width="4*" />
+		</Grid.ColumnDefinitions>
+		
+		<Grid Grid.Row="1" Grid.Column="1" Margin="3" >
+			
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="*" />
+				<ColumnDefinition Width="*" />
+				<ColumnDefinition Width="0.1*" />
+				<ColumnDefinition Width="*" />
+				<ColumnDefinition Width="*" />
+				<ColumnDefinition Width="0.1*" />
+				<ColumnDefinition Width="*" />
+				<ColumnDefinition Width="*" />
+				<ColumnDefinition Width="*" />
+			</Grid.ColumnDefinitions>
+			
+			<Grid.RowDefinitions>
+				<RowDefinition Height="Auto" />
+				<RowDefinition Height="Auto" />
+				<RowDefinition Height="Auto" />
+				<RowDefinition Height="Auto" />
+			</Grid.RowDefinitions>
+			
+			<TextBlock Margin="3" Grid.Column="0" Grid.Row="0"	Text="Offset (X, Y):" VerticalAlignment="Center" />
+			<TextBlock Margin="3" Grid.Column="0" Grid.Row="1"	Text="Is Special Type?:" VerticalAlignment="Center" />
+			<TextBlock Margin="3" Grid.Column="0" Grid.Row="2"	Text="Special Version:" VerticalAlignment="Center" />
+			<TextBlock Margin="3" Grid.Column="3" Grid.Row="0"	Text="Playback Speed Type:" VerticalAlignment="Center" />
+			<TextBlock Margin="3" Grid.Column="3" Grid.Row="1"	Text="Playback Speed:" VerticalAlignment="Center" />
+			<TextBlock Margin="3" Grid.Column="6" Grid.Row="1"	Text="Reference Sprite:" VerticalAlignment="Center" />
+			<TextBlock Margin="3" Grid.Column="6" Grid.Row="0"	Text="Show Borders:" VerticalAlignment="Center" />
+			
+			<CheckBox Margin="3" Grid.Column="1" Grid.Row="1" VerticalAlignment="Center" DataContext="{Binding Sprite}"
+				IsChecked ="{Binding IsSpecial, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+			
+			<CheckBox Margin="3" Grid.Column="7" Grid.Row="0" VerticalAlignment="Center"
+				IsChecked ="{Binding VisibleBorders, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+			
+			<TextBox Margin="3" Grid.Column="1" Grid.Row="2" VerticalAlignment="Center" DataContext="{Binding Sprite}"
+				Text="{Binding SpecialVersion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+				IsEnabled="{Binding IsSpecial, Mode=OneWay}" />
+			
+			<local:ComboBoxDark Margin="3" Grid.Column="4" Grid.Row="0" VerticalAlignment="Center" DataContext="{Binding Sprite}"
+				ItemsSource="{Binding Source={StaticResource AnimSpeedType}}" 
+				SelectedItem="{Binding Path=GMS2PlaybackSpeedType, Mode=TwoWay}" 
+				IsEnabled="{Binding IsSpecial, Mode=OneWay}" />
+			
+			<TextBox Margin="3" Grid.Column="4" Grid.Row="1" VerticalAlignment="Center"
+				Text="{Binding AnimationSpeed, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+				IsEnabled="{Binding IsSpecial, Mode=OneWay}" DataContext="{Binding Sprite}" />
+			
+			<Grid Grid.Column="7" Grid.Row="1" >
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="75*" />
+					<ColumnDefinition Width="25*" />
+				</Grid.ColumnDefinitions>
+				
+				<local:ButtonDark Grid.Column="0" Margin="3" Name="ReferenceSpriteButton" VerticalAlignment="Center">
+					<TextBlock Text="{Binding ReferenceSprite.Name, Mode=OneWay, TargetNullValue='(Click to select)'}" />
+				</local:ButtonDark>
+				
+				<local:ButtonDark Margin="3" Content="X" Grid.Column="1" IsEnabled="{Binding ReferenceEnabled}" 
+					Name="ClearReferenceButton" VerticalAlignment="Center" />
+				
+				<Popup IsOpen="False" StaysOpen="False" Width="500" Height="175" Grid.Column="0" Name="ReferenceSpritePopup">
+					<Grid Background="{DynamicResource {x:Static SystemColors.MenuBrushKey}}">
+						<Grid.RowDefinitions>
+							<RowDefinition Height="6*" />
+							<RowDefinition Height="25*" />
+							<RowDefinition Height="75*" />
+							<RowDefinition Height="25*" />
+							<RowDefinition Height="6*" />
+						</Grid.RowDefinitions>
+						
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="4*" />
+							<ColumnDefinition Width="100*" />
+							<ColumnDefinition Width="4*" />
+						</Grid.ColumnDefinitions>
+						
+						<TextBlock Margin="3" Grid.Row="1" Grid.Column="1" Text="Type in the sprite's name you want to reference." />
+						<TextBox Margin="3" Grid.Row="2" Grid.Column="1" Name="ReferenceSpriteNameBox" />
+						<local:ButtonDark Margin="3" Content="Edit" Grid.Column="1" Grid.Row="3" Name="SubmitReferenceNameButton" />
+					</Grid>
+				</Popup>
+			</Grid>
+			
+			<Grid Grid.Column="1" Grid.Row="0" >
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="*" />
+					<ColumnDefinition Width="*" />
+					<ColumnDefinition Width="*" />
+				</Grid.ColumnDefinitions>
+				
+				<TextBox Grid.Column="0" Text="{Binding SpriteOffsetX, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+					DataContext="{Binding Sprite}" VerticalAlignment="Center" />
+				<TextBox Grid.Column="1" Text="{Binding SpriteOffsetY, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+					DataContext="{Binding Sprite}" VerticalAlignment="Center" />
+				
+				<local:ButtonDark Content="..." Grid.Column="2" Name="OffsetPresetsButton" VerticalAlignment="Center" />
+				<Popup IsOpen="False" StaysOpen="False" Width="200" Height="200" Grid.Column="2" Name="OffsetPresetsPopup">
+					<ListBox Name="OffsetPresetList" SelectionMode="Single"
+						Foreground="{DynamicResource {x:Static SystemColors.MenuTextBrushKey}}"
+						Background="{DynamicResource {x:Static SystemColors.MenuBrushKey}}">
+						<ListBoxItem Content="Top Left"/>
+						<ListBoxItem Content="Top Center"/>
+						<ListBoxItem Content="Top Right"/>
+						<ListBoxItem Content="Middle Left"/>
+						<ListBoxItem Content="Middle Center"/>
+						<ListBoxItem Content="Middle Right"/>
+						<ListBoxItem Content="Bottom Left"/>
+						<ListBoxItem Content="Bottom Center"/>
+						<ListBoxItem Content="Bottom Right"/>
+					</ListBox>
+				</Popup> 
+			</Grid>
+			
+			<Grid Grid.Column="3" Grid.Row="2">
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="*" />
+					<ColumnDefinition Width="*" />
+				</Grid.ColumnDefinitions>
+				
+				<local:ButtonDark Content="Play" Grid.Column="0" Name="PlayAnimButton" />
+				<local:ButtonDark Content="Stop" Grid.Column="1" Name="StopAnimButton" />
+			</Grid>
+			
+			<Grid Grid.Column="4" Grid.Row="2">
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="*" />
+					<ColumnDefinition Width="*" />
+				</Grid.ColumnDefinitions>
+				
+				<local:ButtonDark Content="Prev." Grid.Column="0" Name="PrevFrameButton" />
+				<local:ButtonDark Content="Next" Grid.Column="1" Name="NextFrameButton" />
+			</Grid>
+			
+			<Grid Grid.Column="6" Grid.Row="2">
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="*" />
+					<ColumnDefinition Width="*" />
+				</Grid.ColumnDefinitions>
+				
+				<local:ButtonDark Content="Play" Grid.Column="0" Name="ReferencePlayAnimButton" IsEnabled="{Binding ReferenceEnabled}" />
+				<local:ButtonDark Content="Stop" Grid.Column="1" Name="ReferenceStopAnimButton" IsEnabled="{Binding ReferenceEnabled}" />
+			</Grid>
+			
+			<Grid Grid.Column="7" Grid.Row="2">
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="*" />
+					<ColumnDefinition Width="*" />
+				</Grid.ColumnDefinitions>
+				
+				<local:ButtonDark Content="Prev." Grid.Column="0" Name="ReferencePrevFrameButton" IsEnabled="{Binding ReferenceEnabled}" />
+				<local:ButtonDark Content="Next" Grid.Column="1" Name="ReferenceNextFrameButton" IsEnabled="{Binding ReferenceEnabled}" />
+			</Grid>
+		</Grid>
+		
+		<!--
+		<GridSplitter Grid.Row="2" Grid.Column="2" HorizontalAlignment="Stretch"/>
+		-->
+		
+		<Canvas Name="EditorCanvas" Grid.Row="2" Grid.Column="1" ClipToBounds="True" >
+			<Canvas.Background>
+				<DrawingBrush ViewportUnits="Absolute" Viewport="0,0,16,16" TileMode="Tile">
+					<DrawingBrush.Drawing>
+						<DrawingGroup>
+							<GeometryDrawing Brush="{DynamicResource TransparencyGridColor1}">
+								<GeometryDrawing.Geometry>
+									<RectangleGeometry Rect="0,0,16,16" />
+								</GeometryDrawing.Geometry>
+							</GeometryDrawing>
+							
+							<GeometryDrawing Brush="{DynamicResource TransparencyGridColor2}">
+								<GeometryDrawing.Geometry>
+									<GeometryGroup>
+										<RectangleGeometry Rect="0,0,8,8" />
+										<RectangleGeometry Rect="8,8,8,8" />
+									</GeometryGroup>
+								</GeometryDrawing.Geometry>
+							</GeometryDrawing>
+						</DrawingGroup>
+					</DrawingBrush.Drawing>
+				</DrawingBrush>
+			</Canvas.Background>
+			
+			<Image Name="ReferenceSpriteVisual" RenderOptions.BitmapScalingMode="NearestNeighbor" Stretch="Fill" Opacity ="0.5"
+				Source="{Binding ReferenceSprite.CurrentBitmap, UpdateSourceTrigger=PropertyChanged}" Visibility="{Binding ReferenceVisiblility}" />
+			<Image Name="SpriteVisual" RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{Binding CurrentBitmap, UpdateSourceTrigger=PropertyChanged}" 
+				DataContext="{Binding Sprite, UpdateSourceTrigger=PropertyChanged}" Stretch="Fill" />
+			
+			<Rectangle Name="EditorOffsetPoint" 
+				RenderOptions.BitmapScalingMode="NearestNeighbor" Width="16" Height="16" >
+				<Rectangle.Fill>
+					<DrawingBrush ViewportUnits="Absolute" Viewport="0,0,16,16" >
+						<DrawingBrush.Drawing>
+							<GeometryDrawing Brush="Blue">
+								<GeometryDrawing.Geometry>
+									<GeometryGroup>
+										<RectangleGeometry Rect="6,0,4,16" />
+										<RectangleGeometry Rect="0,6,16,4" />
+									</GeometryGroup>
+								</GeometryDrawing.Geometry>
+							</GeometryDrawing>
+						</DrawingBrush.Drawing>
+					</DrawingBrush>
+				</Rectangle.Fill>
+			</Rectangle>
+			
+			<Border BorderBrush="DarkRed" BorderThickness="3" Opacity ="0.75" Visibility="{Binding ReferenceBorderVisiblility}"
+				Name="ReferenceSpriteAreaBorder" RenderOptions.BitmapScalingMode="NearestNeighbor" />
+			<Border BorderBrush="DarkCyan" BorderThickness="3" Opacity ="0.75" Visibility="{Binding ReferenceBorderVisiblility}"
+				Name="ReferenceSpriteTargetBorder" RenderOptions.BitmapScalingMode="NearestNeighbor" />
+				
+			<Border BorderBrush="DarkRed" BorderThickness="3" Opacity ="0.75" Visibility="{Binding BordersVisibility}"
+				Name="SpriteAreaBorder" RenderOptions.BitmapScalingMode="NearestNeighbor" />
+			<Border BorderBrush="DarkCyan" BorderThickness="3" Opacity ="0.75" Visibility="{Binding BordersVisibility}"
+				Name="SpriteTargetBorder" RenderOptions.BitmapScalingMode="NearestNeighbor" />
+		</Canvas>
+		
+		<Grid Grid.Row="3" Grid.Column="1">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="Auto" MinWidth="75" />
+				<ColumnDefinition Width="2*" />
+				<ColumnDefinition Width="3*" />
+				<ColumnDefinition Width="75*" />
+				<ColumnDefinition Width="25*" />
+			</Grid.ColumnDefinitions>
+			
+			<TextBlock Grid.Column="0" DataContext="{Binding Sprite}">
+				<TextBlock.Text>
+					<Binding Path="CurrentSpriteFrame" Mode="OneWay" StringFormat="{}Frame: {0}" />
+				</TextBlock.Text>
+			</TextBlock>
+			
+			<TextBlock Grid.Column="1" Margin="3,0,0,0" Text="/" />
+			
+			<TextBlock Grid.Column="2" DataContext="{Binding Sprite}">
+				<TextBlock.Text>
+					<Binding Path="SpriteFramesCount" StringFormat="{}{0}" />
+				</TextBlock.Text>
+			</TextBlock>
+			
+			<TextBlock Grid.Column="3">
+				<TextBlock.Text>
+					<MultiBinding StringFormat="{}({0}, {1})">
+						<Binding Path="CameraX" />
+						<Binding Path="CameraY" />
+					</MultiBinding>
+				</TextBlock.Text>
+			</TextBlock>
+			
+			<local:ButtonDark Margin="8" Content="Confirm" Grid.Column="4" Name="ConfirmEditButton" />
+		</Grid>
+	</Grid>
+</Window> 

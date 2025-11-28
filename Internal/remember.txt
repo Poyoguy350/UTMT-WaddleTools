@@ -1,0 +1,2 @@
+C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc /t:library /out:test.dll TheCircus.csx
+nvm launch a Visual Studio CMD and run csc from there
