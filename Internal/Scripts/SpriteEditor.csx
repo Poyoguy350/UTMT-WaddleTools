@@ -258,6 +258,9 @@ public class SpriteEditorSprite: INotifyPropertyChanged
 			AnimationSpeed = 1.0f;
 			SpecialVersion = 1;
 			FPS = 30.0f;
+			
+			if (!IsGMS2 && IsSpecial)
+				IsSpecial = false;
 		}
 		
 		AnimationTimer.Interval = TimeSpan.FromMilliseconds(1000.0f / FPS);
@@ -286,17 +289,29 @@ public class SpriteEditorSprite: INotifyPropertyChanged
 		}
 	}
 	
-	public void ApplyToUndertaleSprite(UndertaleSprite sprite)
+	public void ApplyToSprite(object spr)
 	{
-		sprite.IsSpecialType = IsSpecial;
-		sprite.SVersion = SpecialVersion;
-		sprite.GMS2PlaybackSpeedType = GMS2PlaybackSpeedType;
-		sprite.GMS2PlaybackSpeed = AnimationSpeed;
-		sprite.OriginXWrapper = (int)SpriteOffsetX;
-		sprite.OriginYWrapper = (int)SpriteOffsetY;
-		
-		// no..? who would do this
-		//Sprite.Name = sprite.Name.Content;
+		if (spr is UndertaleSprite)
+		{
+			UndertaleSprite sprite = (spr as UndertaleSprite);
+			sprite.IsSpecialType = IsSpecial;
+			sprite.SVersion = SpecialVersion;
+			sprite.GMS2PlaybackSpeedType = GMS2PlaybackSpeedType;
+			sprite.GMS2PlaybackSpeed = AnimationSpeed;
+			sprite.OriginXWrapper = (int)SpriteOffsetX;
+			sprite.OriginYWrapper = (int)SpriteOffsetY;
+		}
+		else if (spr is WaddleSprite)
+		{
+			WaddleSprite sprite = (spr as WaddleSprite);
+			sprite.Special = IsSpecial;
+			sprite.SpecialVersion = SpecialVersion;
+			sprite.GMS2PlaybackSpeedType = GMS2PlaybackSpeedType;
+			sprite.AnimationSpeed = AnimationSpeed;
+			sprite.OriginX = (int)SpriteOffsetX;
+			sprite.OriginY = (int)SpriteOffsetY;
+			sprite.Name = Name;
+		}
 	}
 }
 
@@ -306,6 +321,7 @@ public class SpriteEditorContext: INotifyPropertyChanged {
 	
 	// ok thank god no more rectangle and brushes or that shit i was just that stupid
 	public Window Window;
+	public Window CancelledMessageOwner = null;
 	public Canvas Canvas;
 	public System.Windows.Shapes.Rectangle OffsetPointerRect;
 	public Popup OffsetPresetsPopup;
@@ -766,7 +782,7 @@ public SpriteEditorSprite CreateEditorSprite(SpriteEditorContext Context, string
 
 public SpriteEditorContext CreateEditorContext() {
 	SpriteEditorContext Context = new();
-	Context.Window = (Window)LoadXaml(Path.Combine(ASSETS_DIR, "SpriteEditor.xaml"));
+	Context.Window = (Window)LoadXaml(Path.Combine(WADDLETOOLS_ASSETS_DIR, "SpriteEditor.xaml"));
 	Context.Canvas = (Canvas)Context.Window.FindName("EditorCanvas");
 	Context.OffsetPointerRect = (System.Windows.Shapes.Rectangle)Context.Window.FindName("EditorOffsetPoint");
 	Context.OffsetPresetsButton = (ButtonDark)Context.Window.FindName("OffsetPresetsButton");
@@ -793,7 +809,7 @@ public SpriteEditorContext CreateEditorContext() {
 	
 	Context.Window.Closed += (s, e) => {
 		if (!Context.ConfirmButtonPressed)
-			CustomScriptMessage("Sprite Edit Cancelled!", Context.Title);
+			CustomScriptMessage("Sprite Edit Cancelled!", Context.Title, Context.CancelledMessageOwner);
 		Context.WindowTask.SetResult(null);
 	};
 	
@@ -831,25 +847,36 @@ public SpriteEditorContext CreateEditorContext() {
 
 public SpriteEditorContext CreateEditorContextFromSprite(object EditingSprite) {
 	SpriteEditorContext Context = CreateEditorContext();
-	
+
 	if (EditingSprite is WaddleSprite) {
-		// WaddleSprite spr = (EditingSprite as WaddleSprite);
-		// ReloadSpriteFrameImages(ref spr);
-		// foreach (WaddleSpriteFrame frame in spr.Frames) {
-		// 	Context.Sprite.Frames.Add(new() {
-		// 		TargetX = frame.TargetX,
-		// 		TargetY = frame.TargetY,
-		// 		TargetWidth = frame.TargetWidth,
-		// 		TargetHeight = frame.TargetHeight, 
-		// 		
-		// 		BoundWidth = frame.BoundWidth,
-		// 		BoundHeight = frame.BoundHeight,
-		// 		
-		// 		Bitmap = MagickToBitmapImage(frame.Image)
-		// 	});
-		// };
-		// UnloadSpriteFrameImages(spr);
-		// Context.WaddleSpriteMode = true;
+		WaddleSprite spr = (EditingSprite as WaddleSprite);
+		ReloadSpriteFrameImages(ref spr);
+		foreach (WaddleSpriteFrame frame in spr.Frames) {
+			Context.Sprite.Frames.Add(new() {
+				TargetX = frame.TargetX,
+				TargetY = frame.TargetY,
+				TargetWidth = frame.TargetWidth,
+				TargetHeight = frame.TargetHeight, 
+				
+				BoundWidth = frame.BoundWidth,
+				BoundHeight = frame.BoundHeight,
+				
+				Bitmap = MagickToBitmapImage(frame.Image)
+			});
+		};
+		
+		UnloadSpriteFrameImages(spr);
+		Context.Sprite.SpriteWidth = spr.Width;
+		Context.Sprite.SpriteHeight = spr.Height;
+		Context.Sprite.IsSpecial = spr.Special;
+		Context.Sprite.SpecialVersion = spr.SpecialVersion;
+		Context.Sprite.GMS2PlaybackSpeedType = spr.GMS2PlaybackSpeedType;
+		Context.Sprite.AnimationSpeed = spr.AnimationSpeed;
+		Context.Sprite.SpriteOffsetX = (float)spr.OriginX;
+		Context.Sprite.SpriteOffsetY = (float)spr.OriginY;
+		Context.Sprite.Name = spr.Name;
+		
+		CustomScriptMessage($"{spr.SpecialVersion}, {Context.Sprite.SpecialVersion}");
 	}
 	else if (EditingSprite is UndertaleSprite) {
 		UndertaleSprite spr = (EditingSprite as UndertaleSprite);

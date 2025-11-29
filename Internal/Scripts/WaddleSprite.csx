@@ -3,6 +3,7 @@
 
 using System.Windows.Media.Imaging;
 using System.Collections.Generic;
+
 using System.Windows;
 
 using UndertaleModLib.Util;
@@ -89,23 +90,6 @@ public void ReloadSpriteFrameImages(ref WaddleSprite waddleSprite) {
 //	return returningImage;
 //}
 
-public BitmapImage MagickToBitmapImage(MagickImage magickImg) {
-	BitmapImage bitmapImg = new();
-	
-	using (MemoryStream stream = new())
-	{
-		magickImg.Write(stream, MagickFormat.Png);
-		stream.Position = 0;
-		
-		bitmapImg.BeginInit();
-		bitmapImg.StreamSource = stream;
-		bitmapImg.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
-		bitmapImg.EndInit();
-	}
-	
-	return bitmapImg;
-}
-
 public void WriteWaddleSpriteFrames(WaddleSprite sprite) {
 	string spriteDirectory = WADDLETOOLS_IMPORTGRAPHICSPLUSPLUS_SPRITES_DIR + "\\" + sprite.Name;
 	Directory.CreateDirectory(spriteDirectory);
@@ -138,6 +122,8 @@ public void SetWaddleSpriteFrameImg(ref WaddleSpriteFrame waddleFrame, MagickIma
         waddleFrame.TargetY = 0;
         waddleFrame.Image.Crop(1, 1);
     }
+	
+	waddleFrame.Image.ResetPage();
 }
 
 public void AddWaddleFrameToSprite(ref WaddleSprite wadSpr, ref WaddleSpriteFrame waddleFrame, ref bool definedMargins) {
@@ -265,9 +251,10 @@ public WaddleSprite CreateWaddleSpriteFromFile(string file) {
 	WaddleSprite wadSpr = new() { Name = spriteImportedName };
 	
 	if (spriteExtension == ".gif") {
-		MagickImageCollection gif = new(file, MAGICK_READSETTINGS);
-		int frames = gif.Count;
+		using MagickImageCollection gif = new(file, MAGICK_READSETTINGS);
+		gif.Coalesce(); // makes sure some frames aren't a blank frame because of .gif file probably having optimization stuff
 		
+		int frames = gif.Count;
 		if (spriteType != WaddleSpriteType.Sprite && frames > 1)
         {
             CustomScriptMessage(file + " is not a sprite, but has more than 1 frame. Operation aborted.", "WaddleSprite Error!", MessageWindowOwner_WaddleSprite);
