@@ -3,19 +3,51 @@
 #load ".\Internal\Scripts\SpriteEditor.csx"
 
 using System.Windows;
-using System.Windows.Controls;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
+using System.Windows.Controls;
+using Microsoft.CodeAnalysis.CSharp.Scripting;
+using Microsoft.CodeAnalysis.Scripting;
 using UndertaleModLib.Util;
 
+#region Classes
+
+public class GameSpecificSpriteTemplate
+{
+	public string ConditionString;
+	public string SpriteOffsetXString;
+	public string SpriteOffsetYString;
+	public string SpriteSpecialString;
+	public string SpriteSpecialVersionString;
+	public string SpriteGMS2PlaybackSpeedTypeString;
+	public string SpritePlaybackSpeedString;
+	
+	public static string ReplaceMultiple(string BaseString, Dictionary<string, object> ReplaceDict)
+	{
+		string ResultString = new(BaseString);
+		
+		foreach (string Key in ReplaceDict.Keys)
+		{
+			string KeyBlock = "${" + Key + "}";
+			ResultString = ResultString.Replace(KeyBlock, ReplaceDict[Key].ToString());
+		}
+		
+		return ResultString;
+	}
+}
+
+#endregion
 #region Variables
 
 List<WaddleSprite> GraphicsSharpQueue = new();
 
-Window GraphicsSharpWindow = (Window)LoadXaml(Path.Combine(ASSETS_DIR, "ImportGraphicsSharp.xaml")); 
+Window GraphicsSharpWindow = (Window)LoadXaml(Path.Combine(WADDLETOOLS_ASSETS_DIR, "ImportGraphicsSharp.xaml")); 
 Button QueueGraphicsButton = (Button)GraphicsSharpWindow.FindName("QueueGraphics");
 Button DequeueGraphicsButton = (Button)GraphicsSharpWindow.FindName("DequeueGraphics");
+Button EditGraphicsButton = (Button)GraphicsSharpWindow.FindName("EditGraphic");
 ListView VisualQueue = (ListView)GraphicsSharpWindow.FindName("VisualQueue");
 TaskCompletionSource<object> GraphicsSharpWindowTask = new();
+GameSpecificSpriteTemplate Template = null;
 
 bool ImportCancel = true;
 
@@ -86,6 +118,34 @@ async public void ImportSpriteButton_Click(object sender, RoutedEventArgs ev)
 				}
 			}
 			
+			if (Template != null)
+			{
+				Dictionary<string, object> TemplateGlobals = new() { 
+					{"SpriteWidth", sprite.Width}, 
+					{"SpriteHeight", sprite.Height}, 
+					{"SpriteName", sprite.Name} 
+				};
+				
+				string OffsetXFixed = GameSpecificSpriteTemplate.ReplaceMultiple(Template.SpriteOffsetXString, TemplateGlobals);
+				string OffsetYFixed = GameSpecificSpriteTemplate.ReplaceMultiple(Template.SpriteOffsetYString, TemplateGlobals);
+				string SpecialFixed = GameSpecificSpriteTemplate.ReplaceMultiple(Template.SpriteSpecialString, TemplateGlobals);
+				string SpecialVersionFixed = GameSpecificSpriteTemplate.ReplaceMultiple(Template.SpriteSpecialVersionString, TemplateGlobals);
+				string SpriteGMS2PlaybackSpeedTypeString = GameSpecificSpriteTemplate.ReplaceMultiple(Template.SpriteGMS2PlaybackSpeedTypeString, TemplateGlobals);
+				string SpritePlaybackSpeedStringFixed = GameSpecificSpriteTemplate.ReplaceMultiple(Template.SpritePlaybackSpeedString, TemplateGlobals);
+				sprite.OriginX = await CSharpScript.EvaluateAsync<int>(OffsetXFixed);
+				sprite.OriginY = await CSharpScript.EvaluateAsync<int>(OffsetYFixed);
+				
+				if (Data.IsGameMaker2())
+				{
+					sprite.Special = await CSharpScript.EvaluateAsync<bool>(SpecialFixed);
+					sprite.SpecialVersion = await CSharpScript.EvaluateAsync<uint>(SpecialVersionFixed);
+					sprite.GMS2PlaybackSpeedType = Enum.Parse<AnimSpeedType>(await CSharpScript.EvaluateAsync<string>(SpriteGMS2PlaybackSpeedTypeString));
+					sprite.AnimationSpeed = (float)(await CSharpScript.EvaluateAsync<double>(SpritePlaybackSpeedStringFixed));
+				}
+				else
+					CustomScriptMessage("UndertaleData isn't a GM2 type! Cannot apply Special Playback Templates.", "ImportGraphicsSharp", GraphicsSharpWindow);
+			}
+			
 			GraphicsSharpQueue.Add(sprite);
 		}
 		
@@ -114,9 +174,53 @@ public void RemoveSpriteButton_Click(object sender, RoutedEventArgs ev)
 	RefreshVisualQueue();
 }
 
+public async void EditSpriteButton_Click(object sender, RoutedEventArgs ev)
+{
+	if (VisualQueue.SelectedIndex == -1) {
+		CustomScriptMessage("No selected sprite to edit! Operation aborted.");
+		return;
+	}
+	
+	WaddleSprite editingSprite = GraphicsSharpQueue[VisualQueue.SelectedIndex];
+	SpriteEditorContext Context = CreateEditorContextFromSprite(editingSprite);
+	Context.CancelledMessageOwner = GraphicsSharpWindow;
+	Context.Window.Show();
+	GraphicsSharpWindow.IsEnabled = false;
+	await Context.WindowTask.Task;
+	GraphicsSharpWindow.IsEnabled = true;
+	
+	if (Context.ConfirmButtonPressed)
+		Context.Sprite.ApplyToSprite(editingSprite);
+}
+
 #endregion
 #region Setup
 
+foreach (string SpecificData in Directory.GetFiles(WADDLETOOLS_IMPORTGRAPHICS_TEMPLATES_DIR))
+{
+	string SpecificDataText = File.ReadAllText(SpecificData); 
+	JsonNode Root = JsonNode.Parse(SpecificDataText);
+	GameSpecificSpriteTemplate NewTemplate = new();
+	
+	NewTemplate.ConditionString = Root["ConditionExpression"].ToString();
+	NewTemplate.SpriteOffsetXString = Root["SpriteTemplate"]["OriginX"].ToString();
+	NewTemplate.SpriteOffsetYString = Root["SpriteTemplate"]["OriginY"].ToString();
+	NewTemplate.SpriteSpecialString = Root["SpriteTemplate"]["Special"].ToString();
+	NewTemplate.SpriteSpecialVersionString = Root["SpriteTemplate"]["SpecialVersion"].ToString();
+	NewTemplate.SpriteGMS2PlaybackSpeedTypeString = Root["SpriteTemplate"]["GMS2PlaybackSpeedType"].ToString();
+	NewTemplate.SpritePlaybackSpeedString = Root["SpriteTemplate"]["AnimationSpeed"].ToString();
+	
+	string ConditionStringFixed = GameSpecificSpriteTemplate.ReplaceMultiple(NewTemplate.ConditionString, new() {
+		{"DisplayName", Data.GeneralInfo.DisplayName}, {"FileName", Data.GeneralInfo.FileName}
+	});
+	
+	bool result = await CSharpScript.EvaluateAsync<bool>(ConditionStringFixed);
+	if (!result)
+		continue;
+	
+	Template = NewTemplate;
+	break;
+}
 
 #endregion
 #region Events
@@ -124,6 +228,7 @@ public void RemoveSpriteButton_Click(object sender, RoutedEventArgs ev)
 GraphicsSharpWindow.Closed += (s, e) => GraphicsSharpWindowTask.SetResult(null);
 QueueGraphicsButton.Click += (s, e) => ImportSpriteButton_Click(s, e);
 DequeueGraphicsButton.Click += (s, e) => RemoveSpriteButton_Click(s, e);
+EditGraphicsButton.Click += (s, e) => EditSpriteButton_Click(s, e);
 
 #endregion
 #region Execution
