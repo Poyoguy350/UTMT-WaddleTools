@@ -12,7 +12,7 @@ UndertaleSprite editingSprite = null;
 if (mainWindow.CurrentTab.CurrentObject is UndertaleSprite)
 	editingSprite = (mainWindow.CurrentTab.CurrentObject as UndertaleSprite);
 else {
-	Window SpriteEditorInputBoxWindow = (Window)LoadXaml(Path.Combine(ASSETS_DIR, "SpriteEditorInputBox.xaml"));
+	Window SpriteEditorInputBoxWindow = (Window)LoadXaml(Path.Combine(WADDLETOOLS_INTERNAL_DIR, "SpriteEditorInputBox.xaml"));
 	TextBox SpriteNameBox = (TextBox)SpriteEditorInputBoxWindow.FindName("SpriteNameBox");
 	ButtonDark EditButton = (ButtonDark)SpriteEditorInputBoxWindow.FindName("EditButton");
 	TaskCompletionSource<object> SpriteEditorInputBoxWindowTask = new();
@@ -59,4 +59,4 @@ Context.Window.Show();
 await Context.WindowTask.Task;
 
 if (Context.ConfirmButtonPressed)
-	Context.Sprite.ApplyToUndertaleSprite(editingSprite);
+	Context.Sprite.ApplyToSprite(editingSprite);
