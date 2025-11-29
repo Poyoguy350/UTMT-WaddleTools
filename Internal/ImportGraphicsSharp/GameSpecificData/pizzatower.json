@@ -1,0 +1,11 @@
+{
+	"ConditionExpression": "${DisplayName} == \"Pizza Tower\" || ${FileName} == \"PizzaTower_GM2\"",
+	"SpriteTemplate": {
+		"OriginX": "${SpriteWidth} / 2",
+		"OriginY": "${SpriteHeight} / 2",
+		"Special": true,
+		"SpecialVersion": 3,
+		"GMS2PlaybackSpeedType": "\"FramesPerGameFrame\"",
+		"AnimationSpeed": 1.0
+	}
+}
