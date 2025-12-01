@@ -3,11 +3,13 @@
 #load ".\Internal\Scripts\SpriteEditor.csx"
 
 using System.Windows;
+using System.Windows.Media;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
+using static UndertaleModTool.MainWindow;
 using UndertaleModLib.Util;
 
 #region Classes
@@ -33,6 +35,28 @@ public class GameSpecificSpriteTemplate
 		}
 		
 		return ResultString;
+	}
+	
+	public async static Task<AnimSpeedType> ParseAnimSpeedType(string StringBase)
+	{
+		switch (StringBase)
+		{
+			case ("FramesPerGameFrame"):
+			{
+				return AnimSpeedType.FramesPerGameFrame;
+				break;
+			}
+			case ("FramesPerSecond"):
+			{
+				return AnimSpeedType.FramesPerSecond;
+				break;
+			}
+			default:
+			{
+				return Enum.Parse<AnimSpeedType>(await CSharpScript.EvaluateAsync<string>(StringBase));
+				break;
+			}
+		}
 	}
 }
 
@@ -83,6 +107,7 @@ async public void ImportSpriteButton_Click(object sender, RoutedEventArgs ev)
 	}
 	
 	GraphicsSharpWindow.IsEnabled = false;
+	List<WaddleSprite> UnknownGraphics = new();
 	SetProgressBar(null, "Queueing Sprites...", 0, fileDialog.FileNames.Length);
     StartProgressBarUpdater();
 	
@@ -139,7 +164,7 @@ async public void ImportSpriteButton_Click(object sender, RoutedEventArgs ev)
 				{
 					sprite.Special = await CSharpScript.EvaluateAsync<bool>(SpecialFixed);
 					sprite.SpecialVersion = await CSharpScript.EvaluateAsync<uint>(SpecialVersionFixed);
-					sprite.GMS2PlaybackSpeedType = Enum.Parse<AnimSpeedType>(await CSharpScript.EvaluateAsync<string>(SpriteGMS2PlaybackSpeedTypeString));
+					sprite.GMS2PlaybackSpeedType = await GameSpecificSpriteTemplate.ParseAnimSpeedType(SpriteGMS2PlaybackSpeedTypeString);
 					sprite.AnimationSpeed = (float)(await CSharpScript.EvaluateAsync<double>(SpritePlaybackSpeedStringFixed));
 				}
 				else
@@ -147,6 +172,9 @@ async public void ImportSpriteButton_Click(object sender, RoutedEventArgs ev)
 			}
 			
 			GraphicsSharpQueue.Add(sprite);
+			
+			if (sprite.SpriteType == WaddleSpriteType.Unknown)
+				UnknownGraphics.Add(sprite);
 		}
 		
 		AddProgress(1);
@@ -155,6 +183,45 @@ async public void ImportSpriteButton_Click(object sender, RoutedEventArgs ev)
 	await StopProgressBarUpdater();
 	RefreshVisualQueue();
 	HideProgressBar();
+	
+	if (UnknownGraphics.Count > 0)
+	{
+		Window UndefinedSpritesWindow = (Window)LoadXaml(Path.Combine(WADDLETOOLS_ASSETS_DIR, "UndefinedSpritesQueue.xaml"));
+		ListBox UnknownQueue = (ListBox)UndefinedSpritesWindow.FindName("UnknownQueue");
+		Button ConfirmTypesButton = (Button)UndefinedSpritesWindow.FindName("ConfirmTypesButton");
+		TaskCompletionSource<object> UndefinedSpritesTask = new();
+		bool UndefinedSpritesConfirmed = false; // i actually have no idea what practical use this has but idk
+		
+		UndefinedSpritesWindow.Closed += (s, e) => UndefinedSpritesTask.SetResult(null);
+		ConfirmTypesButton.Click += (s, e) => {
+			UndefinedSpritesConfirmed = true;
+			UndefinedSpritesWindow.Close();
+		};
+		
+		foreach (WaddleSprite spr in UnknownGraphics) UnknownQueue.Items.Add(spr.Name);
+		UndefinedSpritesWindow.Show();
+		await UndefinedSpritesTask.Task;
+		
+		
+		int index = 0;
+		foreach (WaddleSprite spr in UnknownGraphics)
+		{
+			if (!UndefinedSpritesConfirmed)
+			{
+				spr.SpriteType = WaddleSpriteType.Sprite;
+				continue;
+			}
+			
+			ListBoxItem Item = (ListBoxItem)UnknownQueue.ItemContainerGenerator.ContainerFromItem(UnknownQueue.Items[index]);
+			ContentPresenter Presenter = FindVisualChild<ContentPresenter>(Item); // using static UndertaleModTool.MainWindow;
+			ComboBoxDark TypeComboBox = (ComboBoxDark)Presenter.ContentTemplate.FindName("SpriteTypeCombo", Presenter);	
+			spr.SpriteType = Enum.Parse<WaddleSpriteType>(TypeComboBox.SelectedItem.ToString());
+			index++;
+		}
+		
+		if (!UndefinedSpritesConfirmed)
+			CustomScriptMessage("Configuration cancelled! All unknown sprites are set to \"WaddleSpriteType.Sprite\".", "ImportGraphicsSharp", GraphicsSharpWindow);
+	}
 	
 	GraphicsSharpWindow.IsEnabled = true;
 }

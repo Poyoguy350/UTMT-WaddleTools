@@ -5,7 +5,7 @@
 		"OriginY": "${SpriteHeight} / 2",
 		"Special": true,
 		"SpecialVersion": 3,
-		"GMS2PlaybackSpeedType": "\"FramesPerGameFrame\"",
+		"GMS2PlaybackSpeedType": "FramesPerGameFrame",
 		"AnimationSpeed": 1.0
 	}
 }

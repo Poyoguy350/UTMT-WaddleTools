@@ -182,9 +182,6 @@ public WaddleSprite CreateWaddleSpriteFromFile(string file) {
 			spriteImportedName = dirNameAsSprite;
 			dirNameSprite = true;
 		}
-		else {
-			CustomScriptMessage($"Cannot identify SpriteType of \"{spriteImportedName}\"!\n\nTODO: add an something that user can manually define sprite type, or do it in the sprite editor (ONLY FOR IMPORTGRAPHICS++)");
-		}
 	}
 	
 	if (spriteExtension == ".png") {
@@ -208,7 +205,7 @@ public WaddleSprite CreateWaddleSpriteFromFile(string file) {
 				return null;
             }
 
-            if (spriteType != WaddleSpriteType.Sprite && frames > 1)
+            if (spriteType != WaddleSpriteType.Sprite && spriteType != WaddleSpriteType.Unknown && frames > 1)
             {
                 CustomScriptMessage(file + " is not a sprite, but has more than 1 frame. Operation aborted.", "WaddleSprite Error!", MessageWindowOwner_WaddleSprite);
 				return null;
@@ -248,14 +245,14 @@ public WaddleSprite CreateWaddleSpriteFromFile(string file) {
 	}
 	
 	bool definedMargins = false;
-	WaddleSprite wadSpr = new() { Name = spriteImportedName };
+	WaddleSprite wadSpr = new() { Name = spriteImportedName, SpriteType = spriteType };
 	
 	if (spriteExtension == ".gif") {
 		using MagickImageCollection gif = new(file, MAGICK_READSETTINGS);
 		gif.Coalesce(); // makes sure some frames aren't a blank frame because of .gif file probably having optimization stuff
 		
 		int frames = gif.Count;
-		if (spriteType != WaddleSpriteType.Sprite && frames > 1)
+		if (spriteType != WaddleSpriteType.Sprite && spriteType != WaddleSpriteType.Unknown && frames > 1)
         {
             CustomScriptMessage(file + " is not a sprite, but has more than 1 frame. Operation aborted.", "WaddleSprite Error!", MessageWindowOwner_WaddleSprite);
 			return null;

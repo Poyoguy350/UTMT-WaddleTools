@@ -75,7 +75,7 @@
 			<TextBlock Margin="3" Grid.Column="6" Grid.Row="0"	Text="Show Borders:" VerticalAlignment="Center" />
 			
 			<CheckBox Margin="3" Grid.Column="1" Grid.Row="1" VerticalAlignment="Center" DataContext="{Binding Sprite}"
-				IsChecked ="{Binding IsSpecial, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+				IsEnabled="{Binding IsGMS2}" IsChecked="{Binding IsSpecial, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
 			
 			<CheckBox Margin="3" Grid.Column="7" Grid.Row="0" VerticalAlignment="Center"
 				IsChecked ="{Binding VisibleBorders, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />

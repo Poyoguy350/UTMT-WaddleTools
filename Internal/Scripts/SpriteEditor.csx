@@ -875,8 +875,6 @@ public SpriteEditorContext CreateEditorContextFromSprite(object EditingSprite) {
 		Context.Sprite.SpriteOffsetX = (float)spr.OriginX;
 		Context.Sprite.SpriteOffsetY = (float)spr.OriginY;
 		Context.Sprite.Name = spr.Name;
-		
-		CustomScriptMessage($"{spr.SpecialVersion}, {Context.Sprite.SpecialVersion}");
 	}
 	else if (EditingSprite is UndertaleSprite) {
 		UndertaleSprite spr = (EditingSprite as UndertaleSprite);
