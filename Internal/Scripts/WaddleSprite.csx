@@ -3,7 +3,6 @@
 
 using System.Windows.Media.Imaging;
 using System.Collections.Generic;
-
 using System.Windows;
 
 using UndertaleModLib.Util;
@@ -28,7 +27,18 @@ public class WaddleSpriteFrame {
 	public ushort BoundWidth = 0;
 	public ushort BoundHeight = 0;
 	
-	public MagickImage Image = null; 
+	public MagickImage Image = null;
+	
+	private WaddleSprite _SpriteSource = null;
+	public WaddleSprite SpriteSource
+	{
+		get => _SpriteSource;
+		set {
+			if (_SpriteSource != null)
+				_SpriteSource.Frames.Remove(this);
+			_SpriteSource = value;
+		}
+	}
 }
 
 public class WaddleSprite {
@@ -75,7 +85,7 @@ public void UnloadSpriteFrameImages(WaddleSprite waddleSprite) {
 	{ frame.Image.Dispose(); }
 }
 
-public void ReloadSpriteFrameImages(ref WaddleSprite waddleSprite) {
+public void ReloadSpriteFrameImages(WaddleSprite waddleSprite) {
 	string spriteDirectory = WADDLETOOLS_IMPORTGRAPHICSPLUSPLUS_SPRITES_DIR + "\\" + waddleSprite.Name;
 	
 	for (int i = 0; i < waddleSprite.Frames.Count; i++)
@@ -160,6 +170,7 @@ public void AddWaddleFrameToSprite(ref WaddleSprite wadSpr, ref WaddleSpriteFram
 	//if (foundDupe)
 	//	return;
 	
+	waddleFrame.SpriteSource = wadSpr;
 	wadSpr.FramesSequence.Add((uint)wadSpr.Frames.Count);
 	wadSpr.Frames.Add(waddleFrame);
 }

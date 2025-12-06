@@ -1,6 +1,7 @@
 #load ".\Internal\Scripts\Constants.csx"
 #load ".\Internal\Scripts\WaddleSprite.csx"
 #load ".\Internal\Scripts\SpriteEditor.csx"
+#load ".\Internal\Scripts\TexturePacker.csx"
 
 using System.Windows;
 using System.Windows.Media;
@@ -69,6 +70,7 @@ Window GraphicsSharpWindow = (Window)LoadXaml(Path.Combine(WADDLETOOLS_ASSETS_DI
 Button QueueGraphicsButton = (Button)GraphicsSharpWindow.FindName("QueueGraphics");
 Button DequeueGraphicsButton = (Button)GraphicsSharpWindow.FindName("DequeueGraphics");
 Button EditGraphicsButton = (Button)GraphicsSharpWindow.FindName("EditGraphic");
+Button StartImportButton = (Button)GraphicsSharpWindow.FindName("StartImport");
 ListView VisualQueue = (ListView)GraphicsSharpWindow.FindName("VisualQueue");
 TaskCompletionSource<object> GraphicsSharpWindowTask = new();
 GameSpecificSpriteTemplate Template = null;
@@ -296,6 +298,10 @@ GraphicsSharpWindow.Closed += (s, e) => GraphicsSharpWindowTask.SetResult(null);
 QueueGraphicsButton.Click += (s, e) => ImportSpriteButton_Click(s, e);
 DequeueGraphicsButton.Click += (s, e) => RemoveSpriteButton_Click(s, e);
 EditGraphicsButton.Click += (s, e) => EditSpriteButton_Click(s, e);
+StartImportButton.Click += (s, e) => {
+	ImportCancel = false;
+	GraphicsSharpWindow.Close();
+};
 
 #endregion
 #region Execution
@@ -303,5 +309,19 @@ EditGraphicsButton.Click += (s, e) => EditSpriteButton_Click(s, e);
 GraphicsSharpWindow.Show();
 await GraphicsSharpWindowTask.Task;
 if (ImportCancel) CustomScriptMessage("Import Cancelled!", "ImportGraphicsSharp");
+else
+{
+	Packer _Packer = new();
+	List<WaddleSpriteFrame> FramesQueue = new();
+	
+	foreach (WaddleSprite Sprite in GraphicsSharpQueue)
+	{
+		ReloadSpriteFrameImages(Sprite);
+		FramesQueue.AddRange(Sprite.Frames);
+	}
+	
+	_Packer.Pack(FramesQueue);
+	_Packer.SaveAtlasses(Path.Combine(WADDLETOOLS_DIR, "PackerTest.png"));
+}
 
 #endregion

@@ -850,7 +850,7 @@ public SpriteEditorContext CreateEditorContextFromSprite(object EditingSprite) {
 
 	if (EditingSprite is WaddleSprite) {
 		WaddleSprite spr = (EditingSprite as WaddleSprite);
-		ReloadSpriteFrameImages(ref spr);
+		ReloadSpriteFrameImages(spr);
 		foreach (WaddleSpriteFrame frame in spr.Frames) {
 			Context.Sprite.Frames.Add(new() {
 				TargetX = frame.TargetX,
