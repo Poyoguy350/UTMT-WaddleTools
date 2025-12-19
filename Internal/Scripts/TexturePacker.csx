@@ -5,10 +5,8 @@
 
 using UndertaleModLib.Util;
 using System.Collections.Generic;
-using System.Windows.Forms;
 using System.Linq;
 using ImageMagick;
-using ImageMagick.Drawing;
 
 public enum PackerSplitType
 {
@@ -164,7 +162,7 @@ public class Packer
 	{
 		List<PackerNode> FreeNodes = new();
 		List<PackerNode> UnfitNodes = new();
-		List<WaddleSpriteFrame> FramesToPack = Frames.OrderBy(r => r.TargetWidth * r.TargetHeight).ToList();
+		List<WaddleSpriteFrame> FramesToPack = Frames.OrderByDescending(r => r.TargetWidth * r.TargetHeight).ToList();
 		List<WaddleSpriteFrame> UnfitFrames = new();
 		
 		Atlas.Nodes = new();
@@ -173,10 +171,11 @@ public class Packer
 			Width = Atlas.Width,
 			Height = Atlas.Height,
 			SplitType = PackerSplitType.Horizontal
-		});
+		}); // Root node
 		
 		while (FreeNodes.Count > 0 && FramesToPack.Count > 0)
 		{
+			FreeNodes = FreeNodes.OrderByDescending(r => r.Width * r.Height).ToList();
 			PackerNode Node = FreeNodes[0];
 			FreeNodes.RemoveAt(0);
 			
@@ -195,9 +194,11 @@ public class Packer
 			Node.Source = Frame;
 			Node.Width = Frame.TargetWidth;
 			Node.Height = Frame.TargetHeight;
+			
 			FramesToPack.Remove(Frame);
 			FreeNodes.AddRange(UnfitNodes); // bring em back we might need em!
 			Atlas.Nodes.Add(Node);
+			UnfitNodes.Clear();
 		}
 		
 		return FramesToPack;

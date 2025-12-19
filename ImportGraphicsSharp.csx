@@ -321,7 +321,7 @@ else
 	}
 	
 	_Packer.Pack(FramesQueue);
-	_Packer.SaveAtlasses(Path.Combine(WADDLETOOLS_DIR, "PackerTest.png"));
+	_Packer.SaveAtlasses(Path.Combine(WADDLETOOLS_DIR, "PackerTest"));
 }
 
 #endregion
