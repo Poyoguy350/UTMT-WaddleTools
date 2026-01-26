@@ -20,9 +20,12 @@ An advanced graphics importer script! (Will be in tandem with the WaddleTools Sp
 ### ReduceTextures.csx (WORK IN PROGRESS! NOT INCLUDED IN ANY RELEASES!!):
 Script meant to clean off unreferenced Embedded Textures or Page Items! (Unused sprites was originally planned here but code referencing sprite as numbers bug things so grrrr that's why its put on hold for now unless I decided I'll not include a Unused Sprites Cleanup feature in it's release or someone else smarter than me figure it out...)
 
-## Undertale Modding Tool versions tested:
-- v0.8.3.0
-- v0.8.2.0
+## Undertale Modding Tool Version Compatibility List:
+| UndertaleModding Tool Version | SpriteEditorStandalone.csx | ImportGraphicsSharp.csx | Compatibility |
+| --- | :---: | :---: | :---: |
+| v0.8.3.0 | ✔️ | ✔️ | ✔️<br>(WaddleTools is developed in this version, should have less oddities compared to other versions.) |
+| v0.8.2.0 | ✔️ | ✔️ | ✔️<br>(The only other version so far tested with the scripts, though still be aware of some flaws that wouldn't appear on the former version above.) |
+| v0.5.5 to v0.6.0.0 *(or UTMTCE you get the idea)* | ✔️ | ❌<br>(This is still WIP i'm tryna find a possible workaround) | ⚠️<br>(Doesn't have the libraries that some scripts requires to be fully functional!) |
 
 feel free to add more versions in this list that are compatible with the tools!
 
