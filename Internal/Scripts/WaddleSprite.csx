@@ -133,7 +133,12 @@ public void SetWaddleSpriteFrameImg(ref WaddleSpriteFrame waddleFrame, MagickIma
         waddleFrame.Image.Crop(1, 1);
     }
 	
-	waddleFrame.Image.ResetPage();
+	// UTMTCE Compatibilities man whateverr
+	string ResetPageMethod = "ResetPage";
+	var MagickType = waddleFrame.Image.GetType();
+	if (MagickType.GetMethod(ResetPageMethod) == null)
+		ResetPageMethod = "RePage";
+	MagickType.GetMethod(ResetPageMethod).Invoke(waddleFrame.Image, null);
 }
 
 public void AddWaddleFrameToSprite(ref WaddleSprite wadSpr, ref WaddleSpriteFrame waddleFrame, ref bool definedMargins) {

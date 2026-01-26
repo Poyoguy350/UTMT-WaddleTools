@@ -16,8 +16,8 @@ public enum PackerSplitType
 
 public enum PackerBestFitHeuristic
 {
-	Area,
-	MaxOneAxis
+	MaxOneAxis,
+	Area
 }
 
 public class PackerNode
@@ -39,8 +39,16 @@ public class PackerAtlas
 	public List<PackerNode> Nodes;
 	
 	public MagickImage CreateImage()
-	{	
-		MagickImage AtlasImage = new(MagickColors.Transparent, (uint)Width, (uint)Height);
+	{
+		// JUST MADE SOME BULLSHIT !!!!!!!
+		// Gnomus you are lucky i tried to make this friendly between UTMT and UTMTCE as possible uhhghhghh
+		MagickImage AtlasImage = null;
+		Type MagickType = typeof(MagickImage);
+		
+		if (MagickType.GetMethod("ResetPage") != null)
+			AtlasImage = (MagickImage)Activator.CreateInstance(MagickType, MagickColors.Transparent, (uint)Width, (uint)Height);
+		else
+			AtlasImage = (MagickImage)Activator.CreateInstance(MagickType, MagickColors.Transparent, Width, Height);
 		
         foreach (PackerNode Node in Nodes)
         {

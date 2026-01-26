@@ -22,7 +22,6 @@ EnsureDataLoaded();
 Dictionary<Type, string> _cleanup_typesDict;
 Dictionary<string, List<object>> _cleanup_results;
 
-
 _cleanup_typesDict = new() {{ typeof(UndertaleSprite), "SPRITES" }};
 _cleanup_results = (await UndertaleResourceReferenceMethodsMap.GetUnreferencedObjects(Data, _cleanup_typesDict));
 

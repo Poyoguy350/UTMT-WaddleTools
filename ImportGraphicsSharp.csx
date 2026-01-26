@@ -265,6 +265,8 @@ public async void EditSpriteButton_Click(object sender, RoutedEventArgs ev)
 #endregion
 #region Setup
 
+EnsureDataLoaded();
+
 foreach (string SpecificData in Directory.GetFiles(WADDLETOOLS_IMPORTGRAPHICS_TEMPLATES_DIR))
 {
 	string SpecificDataText = File.ReadAllText(SpecificData); 
