@@ -3,6 +3,7 @@
 #load ".\Internal\Scripts\SpriteEditor.csx"
 #load ".\Internal\Scripts\TexturePacker.csx"
 
+using System.Linq;
 using System.Windows;
 using System.Windows.Media;
 using System.Text.Json.Nodes;
@@ -313,17 +314,93 @@ await GraphicsSharpWindowTask.Task;
 if (ImportCancel) CustomScriptMessage("Import Cancelled!", "ImportGraphicsSharp");
 else
 {
-	Packer _Packer = new();
-	List<WaddleSpriteFrame> FramesQueue = new();
+	int LastTexturePageCount = Data.EmbeddedTextures.Count - 1;
+	int LastTexturePageItemCount = Data.TexturePageItems.Count - 1;
 	
-	foreach (WaddleSprite Sprite in GraphicsSharpQueue)
-	{
-		ReloadSpriteFrameImages(Sprite);
-		FramesQueue.AddRange(Sprite.Frames);
+	foreach (var SpritesGroup in GraphicsSharpQueue.GroupBy(Asset => Asset.TextureGroup)) {
+		Packer _Packer = new();
+		List<WaddleSpriteFrame> FramesQueue = new();
+		
+		foreach (WaddleSprite Sprite in SpritesGroup)
+		{
+			switch (Sprite.SpriteType) {
+				case (WaddleSpriteType.Sprite): {
+					UndertaleSprite UTSprite = Data.Sprites.ByName(Sprite.Name);
+					
+					// Create Sprite if it doesn't exist...
+					if (UTSprite == null) {
+						UTSprite = new();
+						UTSprite.Name = new(Sprite.Name);
+						Data.Sprites.Add(UTSprite);
+					}
+					
+					// Hawk tuah! update that thang...
+                    UTSprite.Width = (uint)Sprite.Width;
+                    UTSprite.Height = (uint)Sprite.Height;
+                    UTSprite.MarginLeft = Sprite.MarginLeft;
+                    UTSprite.MarginRight = Sprite.MarginRight;
+                    UTSprite.MarginTop = Sprite.MarginTop;
+                    UTSprite.MarginBottom = Sprite.MarginBottom;
+                    UTSprite.GMS2PlaybackSpeedType = Sprite.GMS2PlaybackSpeedType;
+                    UTSprite.GMS2PlaybackSpeed = Sprite.AnimationSpeed;
+                    UTSprite.IsSpecialType = Sprite.Special;
+                    UTSprite.SVersion = Sprite.SpecialVersion;
+					UTSprite.OriginX = Sprite.OriginX;
+					UTSprite.OriginY = Sprite.OriginY;
+					
+					for (int i = 0; i < Sprite.Frames.Count; i++)
+						UTSprite.Textures.Add(null);
+					break;
+				}
+			}
+			
+			ReloadSpriteFrameImages(Sprite);
+			FramesQueue.AddRange(Sprite.Frames);
+		}
+		
+		_Packer.Pack(FramesQueue);
+		foreach (PackerAtlas Atlas in _Packer.OutputAtlasses) {
+			UndertaleEmbeddedTexture NewTexture = new();
+			NewTexture.Name = new UndertaleString($"Texture {++LastTexturePageCount}");
+			NewTexture.TextureData.Image = GMImage.FromMagickImage(Atlas.CreateImage()).ConvertToPng();
+			Data.EmbeddedTextures.Add(NewTexture);
+			
+			foreach (PackerNode Node in Atlas.Nodes)
+			{
+				if (Node.Source == null)
+					continue;
+				
+				UndertaleTexturePageItem NewPageItem = new UndertaleTexturePageItem();
+                NewPageItem.Name = new UndertaleString($"PageItem {++LastTexturePageItemCount}");
+                NewPageItem.SourceX = (ushort)Node.X;
+                NewPageItem.SourceY = (ushort)Node.Y;
+                NewPageItem.SourceWidth = (ushort)Node.Width;
+                NewPageItem.SourceHeight = (ushort)Node.Height;
+                NewPageItem.TargetX = (ushort)Node.Source.TargetX;
+                NewPageItem.TargetY = (ushort)Node.Source.TargetY;
+                NewPageItem.TargetWidth = (ushort)Node.Source.TargetWidth;
+                NewPageItem.TargetHeight = (ushort)Node.Source.TargetHeight;
+                NewPageItem.BoundingWidth = (ushort)Node.Source.BoundWidth;
+                NewPageItem.BoundingHeight = (ushort)Node.Source.BoundHeight;
+                NewPageItem.TexturePage = NewTexture;
+				Data.TexturePageItems.Add(NewPageItem);
+				
+				WaddleSprite ImportingSprite = Node.Source.SpriteSource;
+				switch (ImportingSprite.SpriteType) {
+					case (WaddleSpriteType.Sprite): {
+						UndertaleSprite UTSprite = Data.Sprites.ByName(ImportingSprite.Name);
+						UndertaleSprite.TextureEntry SpriteEntry = new();
+						SpriteEntry.Texture = NewPageItem;
+						
+						UTSprite.Textures[ImportingSprite.Frames.IndexOf(Node.Source)] = SpriteEntry; // stinky
+						break;
+					}
+				}
+			}
+		}
+		
+		//_Packer.SaveAtlasses(Path.Combine(WADDLETOOLS_DIR, "PackerTest"));
 	}
-	
-	_Packer.Pack(FramesQueue);
-	_Packer.SaveAtlasses(Path.Combine(WADDLETOOLS_DIR, "PackerTest"));
 }
 
 #endregion
