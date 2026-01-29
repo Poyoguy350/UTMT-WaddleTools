@@ -184,7 +184,6 @@ async public void ImportSpriteButton_Click(object sender, RoutedEventArgs ev)
 	}
 	
 	await StopProgressBarUpdater();
-	RefreshVisualQueue();
 	HideProgressBar();
 	
 	if (UnknownGraphics.Count > 0)
@@ -195,44 +194,65 @@ async public void ImportSpriteButton_Click(object sender, RoutedEventArgs ev)
 		TaskCompletionSource<object> UndefinedSpritesTask = new();
 		bool UndefinedSpritesConfirmed = false; // i actually have no idea what practical use this has but idk
 		
+		
 		UndefinedSpritesWindow.Closed += (s, e) => UndefinedSpritesTask.SetResult(null);
 		ConfirmTypesButton.Click += (s, e) => {
 			UndefinedSpritesConfirmed = true;
 			UndefinedSpritesWindow.Close();
 		};
 		
-		foreach (WaddleSprite spr in UnknownGraphics) UnknownQueue.Items.Add(spr.Name);
-		UndefinedSpritesWindow.Show();
-		await UndefinedSpritesTask.Task;
-		
+		foreach (WaddleSprite spr in UnknownGraphics)
+			UnknownQueue.Items.Add(spr.Name);
 		
 		int index = 0;
+		UndefinedSpritesWindow.Show();
 		foreach (WaddleSprite spr in UnknownGraphics)
 		{
-			if (!UndefinedSpritesConfirmed)
-			{
-				spr.SpriteType = WaddleSpriteType.Sprite;
-				continue;
-			}
-			
 			ListBoxItem Item = (ListBoxItem)UnknownQueue.ItemContainerGenerator.ContainerFromItem(UnknownQueue.Items[index]);
 			ContentPresenter Presenter = FindVisualChild<ContentPresenter>(Item); // using static UndertaleModTool.MainWindow;
 			ComboBoxDark TypeComboBox = (ComboBoxDark)Presenter.ContentTemplate.FindName("SpriteTypeCombo", Presenter);	
-			spr.SpriteType = Enum.Parse<WaddleSpriteType>(TypeComboBox.SelectedItem.ToString());
+			TypeComboBox.Items[1] = Data.IsGameMaker2() ? "Tileset" : "Background"; // disgusting but it's the least that i can do
+			
 			index++;
+		}
+		
+		await UndefinedSpritesTask.Task;
+		
+		
+		index = 0;
+		foreach (WaddleSprite spr in UnknownGraphics)
+		{
+			if (!UndefinedSpritesConfirmed) {
+				spr.SpriteType = WaddleSpriteType.Sprite;
+			}
+			else {
+				ListBoxItem Item = (ListBoxItem)UnknownQueue.ItemContainerGenerator.ContainerFromItem(UnknownQueue.Items[index]);
+				ContentPresenter Presenter = FindVisualChild<ContentPresenter>(Item); // using static UndertaleModTool.MainWindow;
+				ComboBoxDark TypeComboBox = (ComboBoxDark)Presenter.ContentTemplate.FindName("SpriteTypeCombo", Presenter);	
+				string WadSprTypeString = TypeComboBox.SelectedItem.ToString();
+				
+				spr.SpriteType = Enum.Parse<WaddleSpriteType>((WadSprTypeString == "Tileset") ? "Background" : WadSprTypeString);
+			}
+			
+			index++;
+			if (spr.SpriteType == WaddleSpriteType.Background && spr.Frames.Count > 1) {
+				GraphicsSharpQueue.Remove(spr);
+				CustomScriptMessage($"Sprite \"{spr.Name}\" not imported, type was set to \"WaddleSpriteType.Background\" but it has more than a single frame!", "ImportGraphicsSharp", GraphicsSharpWindow);
+			}
 		}
 		
 		if (!UndefinedSpritesConfirmed)
 			CustomScriptMessage("Configuration cancelled! All unknown sprites are set to \"WaddleSpriteType.Sprite\".", "ImportGraphicsSharp", GraphicsSharpWindow);
 	}
 	
+	RefreshVisualQueue();
 	GraphicsSharpWindow.IsEnabled = true;
 }
 
 public void RemoveSpriteButton_Click(object sender, RoutedEventArgs ev)
 {
 	if (VisualQueue.SelectedIndex == -1) {
-		CustomScriptMessage("No selected sprite to delete! Operation aborted.");
+		CustomScriptMessage("No selected sprite to delete! Operation aborted.", "ImportGraphicsSharp", GraphicsSharpWindow);
 		return;
 	}
 	
@@ -247,11 +267,16 @@ public void RemoveSpriteButton_Click(object sender, RoutedEventArgs ev)
 public async void EditSpriteButton_Click(object sender, RoutedEventArgs ev)
 {
 	if (VisualQueue.SelectedIndex == -1) {
-		CustomScriptMessage("No selected sprite to edit! Operation aborted.");
+		CustomScriptMessage("No selected sprite to edit! Operation aborted.", "ImportGraphicsSharp", GraphicsSharpWindow);
 		return;
 	}
 	
 	WaddleSprite editingSprite = GraphicsSharpQueue[VisualQueue.SelectedIndex];
+	if (editingSprite.SpriteType != WaddleSpriteType.Sprite) {
+		CustomScriptMessage("This feature is only available for sprite with types \"WaddleSpriteType.Sprite\"!", "ImportGraphicsSharp", GraphicsSharpWindow); // handicapping my script </3
+		return;
+	}
+	
 	SpriteEditorContext Context = CreateEditorContextFromSprite(editingSprite);
 	Context.CancelledMessageOwner = GraphicsSharpWindow;
 	Context.Window.Show();
@@ -330,7 +355,7 @@ else
 					// Create Sprite if it doesn't exist...
 					if (UTSprite == null) {
 						UTSprite = new();
-						UTSprite.Name = new(Sprite.Name);
+						UTSprite.Name = Data.Strings.MakeString(Sprite.Name);
 						Data.Sprites.Add(UTSprite);
 					}
 					
@@ -348,8 +373,33 @@ else
 					UTSprite.OriginX = Sprite.OriginX;
 					UTSprite.OriginY = Sprite.OriginY;
 					
-					for (int i = 0; i < Sprite.Frames.Count; i++)
+					for (int i = UTSprite.Textures.Count; i < Sprite.Frames.Count; i++)
 						UTSprite.Textures.Add(null);
+					
+					if (Sprite.TextureGroup != null) {
+						UndertaleTextureGroupInfo TextureGroup = Data.TextureGroupInfo.ByName(Sprite.TextureGroup);
+						TextureGroup.Sprites.Add(new() { Resource = UTSprite });
+					}
+					
+					break;
+				}
+				case (WaddleSpriteType.Background): {
+					UndertaleBackground UTBackground = Data.Backgrounds.ByName(Sprite.Name);
+					
+					if (UTBackground != null)
+						continue;
+					
+					UTBackground = new UndertaleBackground();
+                    UTBackground.Name = Data.Strings.MakeString(Sprite.Name);
+                    UTBackground.Transparent = false;
+                    UTBackground.Preload = false;
+                    Data.Backgrounds.Add(UTBackground);
+					
+					if (Sprite.TextureGroup != null) {
+						UndertaleTextureGroupInfo TextureGroup = Data.TextureGroupInfo.ByName(Sprite.TextureGroup);
+						TextureGroup.Tilesets.Add(new() { Resource = UTBackground });
+					}
+					
 					break;
 				}
 			}
@@ -364,6 +414,11 @@ else
 			NewTexture.Name = new UndertaleString($"Texture {++LastTexturePageCount}");
 			NewTexture.TextureData.Image = GMImage.FromMagickImage(Atlas.CreateImage()).ConvertToPng();
 			Data.EmbeddedTextures.Add(NewTexture);
+			
+			if (SpritesGroup.Key != null) {
+				UndertaleTextureGroupInfo TextureGroup = Data.TextureGroupInfo.ByName(SpritesGroup.Key);
+				TextureGroup.TexturePages.Add(new() { Resource = NewTexture });
+			}
 			
 			foreach (PackerNode Node in Atlas.Nodes)
 			{
@@ -393,6 +448,11 @@ else
 						SpriteEntry.Texture = NewPageItem;
 						
 						UTSprite.Textures[ImportingSprite.Frames.IndexOf(Node.Source)] = SpriteEntry; // stinky
+						break;
+					}
+					case (WaddleSpriteType.Background): {
+						UndertaleBackground UTBackground = Data.Backgrounds.ByName(ImportingSprite.Name);
+						UTBackground.Texture = NewPageItem;
 						break;
 					}
 				}

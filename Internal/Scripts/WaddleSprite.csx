@@ -74,8 +74,10 @@ public WaddleSpriteType GetSpriteType(string name)
 		return WaddleSpriteType.Sprite;
 	else if (name.StartsWith("bg_") || name.StartsWith("background_"))
 		return WaddleSpriteType.Background;
-	else if (name.StartsWith("fn_") || name.StartsWith("fnt_") || name.StartsWith("font_"))
-		return WaddleSpriteType.Font;
+	
+	// ImportGraphics disregard fonts as sprites? let's just set them unknown for now.
+	//else if (name.StartsWith("fn_") || name.StartsWith("fnt_") || name.StartsWith("font_"))
+	//	return WaddleSpriteType.Font;
 	
 	return WaddleSpriteType.Unknown;
 }

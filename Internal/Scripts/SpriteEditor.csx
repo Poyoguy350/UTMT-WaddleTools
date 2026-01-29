@@ -54,6 +54,8 @@ public class SpriteEditorSprite: INotifyPropertyChanged
 	public Border SpriteAreaBorder;
 	public Border SpriteTargetBorder;
 	
+	public string TextureGroup = null;
+	
 	private List<SpriteEditorFrame> _Frames = null;
 	public List<SpriteEditorFrame> Frames
 	{
@@ -311,6 +313,7 @@ public class SpriteEditorSprite: INotifyPropertyChanged
 			sprite.OriginX = (int)SpriteOffsetX;
 			sprite.OriginY = (int)SpriteOffsetY;
 			sprite.Name = Name;
+			sprite.TextureGroup = TextureGroup;
 		}
 	}
 }
@@ -328,6 +331,7 @@ public class SpriteEditorContext: INotifyPropertyChanged {
 	public Popup ReferenceSpritePopup;
 	public ListBox OffsetPresetList;
 	public TextBox ReferenceSpriteNameBox;
+	public ComboBoxDark TextureGroupCombo;
 	public DrawingBrush BackgroundBrush;
 	
 	public ButtonDark OffsetPresetsButton;
@@ -425,7 +429,19 @@ public class SpriteEditorContext: INotifyPropertyChanged {
 		}
 	}
 	
-	public bool WaddleSpriteMode = false;
+	public bool _WaddleSpriteMode = false;
+	public bool WaddleSpriteMode
+	{
+		get => _WaddleSpriteMode;
+		set {
+			if (_WaddleSpriteMode != value)
+			{
+				_WaddleSpriteMode = value;
+				PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(WaddleSpriteMode)));
+			}
+		}
+	}
+	
 	public bool InputPanning = false;
 	public bool InputOffsetting = false;
 	public bool ConfirmButtonPressed = false;
@@ -462,6 +478,22 @@ public class SpriteEditorContext: INotifyPropertyChanged {
 		set {
 			_CameraY = value;
 			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CameraY)));
+		}
+	}
+	
+	private int _TextureGroupIndex = 0;
+	public int TextureGroupIndex {
+		get => _TextureGroupIndex;
+		set {
+			if (_TextureGroupIndex != value) {
+				_TextureGroupIndex = value;
+				if (value == 0)
+					Sprite.TextureGroup = null;
+				else
+					Sprite.TextureGroup = (string)TextureGroupCombo.Items[value];
+				
+				PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(TextureGroupIndex)));
+			}
 		}
 	}
 	
@@ -799,6 +831,7 @@ public SpriteEditorContext CreateEditorContext() {
 	Context.SubmitReferenceNameButton = (ButtonDark)Context.Window.FindName("SubmitReferenceNameButton");
 	Context.ConfirmEditButton = (ButtonDark)Context.Window.FindName("ConfirmEditButton");
 	Context.ClearReferenceButton = (ButtonDark)Context.Window.FindName("ClearReferenceButton");
+	Context.TextureGroupCombo = (ComboBoxDark)Context.Window.FindName("TextureGroupCombo");
 	Context.OffsetPresetList = (ListBox)Context.Window.FindName("OffsetPresetList");
 	Context.OffsetPresetsPopup = (Popup)Context.Window.FindName("OffsetPresetsPopup");
 	Context.ReferenceSpritePopup = (Popup)Context.Window.FindName("ReferenceSpritePopup");
@@ -841,6 +874,20 @@ public SpriteEditorContext CreateEditorContext() {
 	Context.Window.DataContext = Context;
 	Context.GameFPS = Data.GeneralInfo.GMS2FPS;
 	Context.IsGMS2 = Data.IsGameMaker2();
+	Context.WaddleSpriteMode = false;
+	Context.TextureGroupIndex = 0;
+	
+	int index = 0;
+	Context.TextureGroupCombo.Items.Add("(No Texture Group)");
+	foreach (UndertaleTextureGroupInfo TextureGroup in Data.TextureGroupInfo) {
+		Context.TextureGroupCombo.Items.Add(TextureGroup.Name.Content);
+		
+		// Search for Default Texture Page(?)
+		if (TextureGroup.Name.Content == "Default" && Context.TextureGroupIndex == 0) // hard-coded bullcrap my beloved
+			Context.TextureGroupIndex = (index + 1);
+		
+		index++;
+	}
 	
 	return Context;
 }
@@ -866,6 +913,7 @@ public SpriteEditorContext CreateEditorContextFromSprite(object EditingSprite) {
 		};
 		
 		UnloadSpriteFrameImages(spr);
+		Context.WaddleSpriteMode = true;
 		Context.Sprite.SpriteWidth = spr.Width;
 		Context.Sprite.SpriteHeight = spr.Height;
 		Context.Sprite.IsSpecial = spr.Special;
@@ -904,6 +952,8 @@ public SpriteEditorContext CreateEditorContextFromSprite(object EditingSprite) {
 		Context.Sprite.SpriteOffsetX = (float)spr.OriginXWrapper;
 		Context.Sprite.SpriteOffsetY = (float)spr.OriginYWrapper;
 		Context.Sprite.Name = spr.Name.Content;
+		Context.TextureGroupCombo.Items[0] = "(Disabled)";
+		Context.TextureGroupIndex = 0;
 		worker.Dispose();
 	}
 	

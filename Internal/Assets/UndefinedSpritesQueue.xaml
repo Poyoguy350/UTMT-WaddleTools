@@ -44,7 +44,7 @@
 						<local:ComboBoxDark Margin="3" Grid.Column="1" VerticalAlignment="Center" SelectedIndex="0" Name="SpriteTypeCombo">
 							<sys:String>Sprite</sys:String>
 							<sys:String>Background</sys:String>
-							<sys:String>Font</sys:String>
+							<!-- <sys:String>Font</sys:String> -->
 						</local:ComboBoxDark>
 					</Grid>
 				</DataTemplate>
