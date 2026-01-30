@@ -55,6 +55,7 @@ public class SpriteEditorSprite: INotifyPropertyChanged
 	public Border SpriteTargetBorder;
 	
 	public string TextureGroup = null;
+	public bool GenerateMasks = false;
 	
 	private List<SpriteEditorFrame> _Frames = null;
 	public List<SpriteEditorFrame> Frames
@@ -314,6 +315,8 @@ public class SpriteEditorSprite: INotifyPropertyChanged
 			sprite.OriginY = (int)SpriteOffsetY;
 			sprite.Name = Name;
 			sprite.TextureGroup = TextureGroup;
+			sprite.GenerateMasks = GenerateMasks;
+			sprite.EditedByUser = true;
 		}
 	}
 }
@@ -429,7 +432,7 @@ public class SpriteEditorContext: INotifyPropertyChanged {
 		}
 	}
 	
-	public bool _WaddleSpriteMode = false;
+	private bool _WaddleSpriteMode = false;
 	public bool WaddleSpriteMode
 	{
 		get => _WaddleSpriteMode;
@@ -438,6 +441,20 @@ public class SpriteEditorContext: INotifyPropertyChanged {
 			{
 				_WaddleSpriteMode = value;
 				PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(WaddleSpriteMode)));
+			}
+		}
+	}
+	
+	private bool _GenerateMasksOption = false;
+	public bool GenerateMasksOption
+	{
+		get => _GenerateMasksOption;
+		set {
+			if (_GenerateMasksOption != value)
+			{
+				_GenerateMasksOption = value;
+				Sprite.GenerateMasks = value;
+				PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(GenerateMasksOption)));
 			}
 		}
 	}
@@ -875,19 +892,6 @@ public SpriteEditorContext CreateEditorContext() {
 	Context.GameFPS = Data.GeneralInfo.GMS2FPS;
 	Context.IsGMS2 = Data.IsGameMaker2();
 	Context.WaddleSpriteMode = false;
-	Context.TextureGroupIndex = 0;
-	
-	int index = 0;
-	Context.TextureGroupCombo.Items.Add("(No Texture Group)");
-	foreach (UndertaleTextureGroupInfo TextureGroup in Data.TextureGroupInfo) {
-		Context.TextureGroupCombo.Items.Add(TextureGroup.Name.Content);
-		
-		// Search for Default Texture Page(?)
-		if (TextureGroup.Name.Content == "Default" && Context.TextureGroupIndex == 0) // hard-coded bullcrap my beloved
-			Context.TextureGroupIndex = (index + 1);
-		
-		index++;
-	}
 	
 	return Context;
 }
@@ -914,6 +918,7 @@ public SpriteEditorContext CreateEditorContextFromSprite(object EditingSprite) {
 		
 		UnloadSpriteFrameImages(spr);
 		Context.WaddleSpriteMode = true;
+		Context.GenerateMasksOption = spr.GenerateMasks;
 		Context.Sprite.SpriteWidth = spr.Width;
 		Context.Sprite.SpriteHeight = spr.Height;
 		Context.Sprite.IsSpecial = spr.Special;
@@ -923,6 +928,22 @@ public SpriteEditorContext CreateEditorContextFromSprite(object EditingSprite) {
 		Context.Sprite.SpriteOffsetX = (float)spr.OriginX;
 		Context.Sprite.SpriteOffsetY = (float)spr.OriginY;
 		Context.Sprite.Name = spr.Name;
+		
+		if (!spr.EditedByUser)
+			Context.TextureGroupIndex = 0;
+		
+		int index = 0;
+		Context.TextureGroupCombo.Items.Add("(No Texture Group)");
+		foreach (UndertaleTextureGroupInfo TextureGroup in Data.TextureGroupInfo) {
+			Context.TextureGroupCombo.Items.Add(TextureGroup.Name.Content);
+			
+			// Search for Default Texture Page or search for the sprite's texture group if it was edited before...
+			if ((TextureGroup.Name.Content == "Default" && Context.TextureGroupIndex == 0 && !spr.EditedByUser) || 
+				(TextureGroup.Name.Content == spr.TextureGroup && spr.EditedByUser)) // hard-coded bullcrap my beloved
+				Context.TextureGroupIndex = (index + 1);
+			
+			index++;
+		}
 	}
 	else if (EditingSprite is UndertaleSprite) {
 		UndertaleSprite spr = (EditingSprite as UndertaleSprite);

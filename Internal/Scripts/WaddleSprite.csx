@@ -56,6 +56,10 @@ public class WaddleSprite {
 	public int OriginX = 0;
 	public int OriginY = 0;
 	
+	// Members used by the script
+	public bool EditedByUser = false; 
+	public bool GenerateMasks = false;
+	
 	public bool Special = false;
 	public uint SpecialVersion = 1;
 	

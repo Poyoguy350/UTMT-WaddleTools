@@ -377,6 +377,20 @@ else
 						UTSprite.Textures.Add(null);
 					
 					if (Sprite.TextureGroup != null) {
+						foreach (UndertaleTextureGroupInfo TxGroup in Data.TextureGroupInfo) {
+							List<int> RemoveIndexes = new();
+							
+							int IteratedIndex = 0;
+							foreach (var SpriteResource in TxGroup.Sprites) {
+								if (SpriteResource.Resource == UTSprite)
+									RemoveIndexes.Add(IteratedIndex);
+								IteratedIndex++;
+							}
+							
+							foreach(int Index in RemoveIndexes)
+								TxGroup.Sprites.RemoveAt(Index);
+						}
+						
 						UndertaleTextureGroupInfo TextureGroup = Data.TextureGroupInfo.ByName(Sprite.TextureGroup);
 						TextureGroup.Sprites.Add(new() { Resource = UTSprite });
 					}
