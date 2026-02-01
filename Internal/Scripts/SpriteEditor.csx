@@ -57,6 +57,7 @@ public class SpriteEditorSprite: INotifyPropertyChanged
 	public string TextureGroup = null;
 	public bool GenerateMasks = false;
 	
+	
 	private List<SpriteEditorFrame> _Frames = null;
 	public List<SpriteEditorFrame> Frames
 	{
@@ -87,6 +88,18 @@ public class SpriteEditorSprite: INotifyPropertyChanged
 			{
 				_SpecialVersion = value;
 				PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SpecialVersion)));
+			}
+		}
+	}
+	
+	private uint _BBoxMode = 0;
+	public uint BBoxMode {
+		get => _BBoxMode;
+		set {
+			if (_BBoxMode != value)
+			{
+				_BBoxMode = value;
+				PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(BBoxMode)));
 			}
 		}
 	}
@@ -316,6 +329,7 @@ public class SpriteEditorSprite: INotifyPropertyChanged
 			sprite.Name = Name;
 			sprite.TextureGroup = TextureGroup;
 			sprite.GenerateMasks = GenerateMasks;
+			sprite.BBoxMode = (WaddleBBoxMode)BBoxMode;
 			sprite.EditedByUser = true;
 		}
 	}
@@ -335,6 +349,7 @@ public class SpriteEditorContext: INotifyPropertyChanged {
 	public ListBox OffsetPresetList;
 	public TextBox ReferenceSpriteNameBox;
 	public ComboBoxDark TextureGroupCombo;
+	public ComboBoxDark BBoxModeCombo;
 	public DrawingBrush BackgroundBrush;
 	
 	public ButtonDark OffsetPresetsButton;
@@ -849,6 +864,7 @@ public SpriteEditorContext CreateEditorContext() {
 	Context.ConfirmEditButton = (ButtonDark)Context.Window.FindName("ConfirmEditButton");
 	Context.ClearReferenceButton = (ButtonDark)Context.Window.FindName("ClearReferenceButton");
 	Context.TextureGroupCombo = (ComboBoxDark)Context.Window.FindName("TextureGroupCombo");
+	Context.BBoxModeCombo = (ComboBoxDark)Context.Window.FindName("BBoxModeCombo");
 	Context.OffsetPresetList = (ListBox)Context.Window.FindName("OffsetPresetList");
 	Context.OffsetPresetsPopup = (Popup)Context.Window.FindName("OffsetPresetsPopup");
 	Context.ReferenceSpritePopup = (Popup)Context.Window.FindName("ReferenceSpritePopup");
@@ -919,6 +935,7 @@ public SpriteEditorContext CreateEditorContextFromSprite(object EditingSprite) {
 		UnloadSpriteFrameImages(spr);
 		Context.WaddleSpriteMode = true;
 		Context.GenerateMasksOption = spr.GenerateMasks;
+		Context.Sprite.BBoxMode = (uint)spr.BBoxMode;
 		Context.Sprite.SpriteWidth = spr.Width;
 		Context.Sprite.SpriteHeight = spr.Height;
 		Context.Sprite.IsSpecial = spr.Special;
@@ -934,15 +951,18 @@ public SpriteEditorContext CreateEditorContextFromSprite(object EditingSprite) {
 		
 		int index = 0;
 		Context.TextureGroupCombo.Items.Add("(No Texture Group)");
-		foreach (UndertaleTextureGroupInfo TextureGroup in Data.TextureGroupInfo) {
-			Context.TextureGroupCombo.Items.Add(TextureGroup.Name.Content);
-			
-			// Search for Default Texture Page or search for the sprite's texture group if it was edited before...
-			if ((TextureGroup.Name.Content == "Default" && Context.TextureGroupIndex == 0 && !spr.EditedByUser) || 
-				(TextureGroup.Name.Content == spr.TextureGroup && spr.EditedByUser)) // hard-coded bullcrap my beloved
-				Context.TextureGroupIndex = (index + 1);
-			
-			index++;
+		
+		if (Data.TextureGroupInfo != null && Data.TextureGroupInfo.Count > 0) { 
+			foreach (UndertaleTextureGroupInfo TextureGroup in Data.TextureGroupInfo) {
+				Context.TextureGroupCombo.Items.Add(TextureGroup.Name.Content);
+				
+				// Search for Default Texture Page or search for the sprite's texture group if it was edited before...
+				if ((TextureGroup.Name.Content == "Default" && Context.TextureGroupIndex == 0 && !spr.EditedByUser) || 
+					(TextureGroup.Name.Content == spr.TextureGroup && spr.EditedByUser)) // hard-coded bullcrap my beloved
+					Context.TextureGroupIndex = (index + 1);
+				
+				index++;
+			}
 		}
 	}
 	else if (EditingSprite is UndertaleSprite) {
@@ -973,7 +993,8 @@ public SpriteEditorContext CreateEditorContextFromSprite(object EditingSprite) {
 		Context.Sprite.SpriteOffsetX = (float)spr.OriginXWrapper;
 		Context.Sprite.SpriteOffsetY = (float)spr.OriginYWrapper;
 		Context.Sprite.Name = spr.Name.Content;
-		Context.TextureGroupCombo.Items[0] = "(Disabled)";
+		Context.TextureGroupCombo.Items.Insert(0, "(Disabled)");
+		Context.BBoxModeCombo.Items[0] = "(Disabled)";
 		Context.TextureGroupIndex = 0;
 		worker.Dispose();
 	}

@@ -74,11 +74,36 @@
 			<TextBlock Margin="3" Grid.Column="3" Grid.Row="1"	Text="Playback Speed:" VerticalAlignment="Center" />
 			<TextBlock Margin="3" Grid.Column="6" Grid.Row="1"	Text="Reference Sprite:" VerticalAlignment="Center" />
 			<TextBlock Margin="3" Grid.Column="6" Grid.Row="0"	Text="Show Borders:" VerticalAlignment="Center" />
-			<TextBlock Margin="3" Grid.Column="8" Grid.Row="0"	Text="Texture Group:" VerticalAlignment="Center" />
-			<TextBlock Margin="3" Grid.Column="8" Grid.Row="1"	Text="Generate Mask:" VerticalAlignment="Center" />
+			<TextBlock Margin="3" Grid.Column="8" Grid.Row="0"	Text="Texture Group (?):" VerticalAlignment="Center" >
+				<TextBlock.ToolTip>
+					<StackPanel>
+						<TextBlock Margin="3, 3, 3, 0">Following GMS2 Rules, An Asset can only be assigned in a single texture group.</TextBlock>
+						<TextBlock Margin="3, 0, 3, 0">Reimporting the sprite assigned to a different texture group will have the script</TextBlock>
+						<TextBlock Margin="3, 0, 3, 3">remove the sprite being referenced from former/other texture group(s).</TextBlock>
+					</StackPanel>
+				</TextBlock.ToolTip>
+			</TextBlock>
+			
+			<TextBlock Margin="3" Grid.Column="8" Grid.Row="1"	Text="BBox Mode:" VerticalAlignment="Center" ToolTip="Honest to god dunno what this does" />
+			<TextBlock Margin="3" Grid.Column="8" Grid.Row="2"	Text="Generate Mask (?):" VerticalAlignment="Center" >
+				<TextBlock.ToolTip>
+					<StackPanel>
+						<TextBlock Margin="3, 3, 3, 0">NOTE: This option forcidbly turns the SepMasks Member of UndertaleSprite to "Precise"!</TextBlock>
+						<TextBlock Margin="3, 0, 3, 0">(ONLY enable this option if you know what you're doing cause this may cause some weird</TextBlock>
+						<TextBlock Margin="3, 0, 3, 3">stuff on some games!)</TextBlock>
+					</StackPanel>
+				</TextBlock.ToolTip>
+			</TextBlock>
 			
 			<local:ComboBoxDark Margin="3" Grid.Column="9" VerticalAlignment="Center" Name="TextureGroupCombo" 
 				IsEnabled="{Binding WaddleSpriteMode}" SelectedIndex="{Binding TextureGroupIndex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+			
+			<local:ComboBoxDark Margin="3" Grid.Column="9" Grid.Row="1" VerticalAlignment="Center" Name="BBoxModeCombo"
+				IsEnabled="{Binding WaddleSpriteMode}" SelectedIndex="{Binding Sprite.BBoxMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" >
+				<sys:String>None</sys:String>
+				<sys:String>Full Image</sys:String>
+				<sys:String>Manual</sys:String>
+			</local:ComboBoxDark>
 			
 			<CheckBox Margin="3" Grid.Column="1" Grid.Row="1" VerticalAlignment="Center" DataContext="{Binding Sprite}"
 				IsEnabled="{Binding IsGMS2}" IsChecked="{Binding IsSpecial, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
@@ -86,7 +111,7 @@
 			<CheckBox Margin="3" Grid.Column="7" Grid.Row="0" VerticalAlignment="Center"
 				IsChecked ="{Binding VisibleBorders, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
 			
-			<CheckBox Margin="3" Grid.Column="9" Grid.Row="1" VerticalAlignment="Center"
+			<CheckBox Margin="3" Grid.Column="9" Grid.Row="2" VerticalAlignment="Center" IsEnabled="{Binding WaddleSpriteMode}"
 				IsChecked="{Binding GenerateMasksOption, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
 			
 			<TextBox Margin="3" Grid.Column="1" Grid.Row="2" VerticalAlignment="Center" DataContext="{Binding Sprite}"

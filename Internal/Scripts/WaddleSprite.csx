@@ -18,6 +18,13 @@ public enum WaddleSpriteType: uint
     Unknown
 }
 
+public enum WaddleBBoxMode: uint
+{
+	None = 0,
+	FullImage = 1,
+	Manual = 2
+}
+
 public class WaddleSpriteFrame {
 	public ushort TargetX = 0;
 	public ushort TargetY = 0;
@@ -59,6 +66,9 @@ public class WaddleSprite {
 	// Members used by the script
 	public bool EditedByUser = false; 
 	public bool GenerateMasks = false;
+	public bool ChangedSpriteDimensions = false;
+	public bool GrewBoundingBox = false;
+	public WaddleSpriteFrame BiggestFrame = null;
 	
 	public bool Special = false;
 	public uint SpecialVersion = 1;
@@ -66,6 +76,7 @@ public class WaddleSprite {
 	public float AnimationSpeed = 15.0f;
 	public AnimSpeedType GMS2PlaybackSpeedType = 0;
 	public WaddleSpriteType SpriteType = WaddleSpriteType.Unknown;
+	public WaddleBBoxMode BBoxMode = WaddleBBoxMode.None;
 	
 	public List<WaddleSpriteFrame> Frames = new();
 	public List<uint> FramesSequence = new();
@@ -151,19 +162,28 @@ public void AddWaddleFrameToSprite(ref WaddleSprite wadSpr, ref WaddleSpriteFram
 	wadSpr.Width = Math.Max(wadSpr.Width, waddleFrame.BoundWidth);
 	wadSpr.Height = Math.Max(wadSpr.Height, waddleFrame.BoundHeight);
 	
+	int PrevMarginLeft = wadSpr.MarginLeft;
+	int PrevMarginTop = wadSpr.MarginTop;
+	int PrevMarginRight = wadSpr.MarginRight;
+	int PrevMarginBottom = wadSpr.MarginBottom;
+	
 	if (!definedMargins) {
 		definedMargins = true;	
 		wadSpr.MarginLeft = waddleFrame.TargetX;
 		wadSpr.MarginTop = waddleFrame.TargetY;
-		wadSpr.MarginRight =  waddleFrame.TargetX + waddleFrame.TargetWidth;
-		wadSpr.MarginBottom = waddleFrame.TargetY + waddleFrame.TargetHeight;
+		wadSpr.MarginRight =  waddleFrame.TargetX + (waddleFrame.TargetWidth - 1);
+		wadSpr.MarginBottom = waddleFrame.TargetY + (waddleFrame.TargetHeight - 1);
 	}
 	else {
 		wadSpr.MarginLeft = Math.Min(wadSpr.MarginLeft, waddleFrame.TargetX);
 		wadSpr.MarginTop = Math.Min(wadSpr.MarginTop, waddleFrame.TargetY);
-		wadSpr.MarginRight = Math.Max(wadSpr.MarginRight, waddleFrame.TargetX + waddleFrame.TargetWidth);
-		wadSpr.MarginBottom = Math.Max(wadSpr.MarginBottom, waddleFrame.TargetY + waddleFrame.TargetHeight);
+		wadSpr.MarginRight = Math.Max(wadSpr.MarginRight, waddleFrame.TargetX + (waddleFrame.TargetWidth - 1));
+		wadSpr.MarginBottom = Math.Max(wadSpr.MarginBottom, waddleFrame.TargetY + (waddleFrame.TargetHeight - 1));
 	}
+	
+	if (wadSpr.MarginLeft < PrevMarginLeft || wadSpr.MarginTop < PrevMarginTop ||
+		wadSpr.MarginRight > PrevMarginRight || wadSpr.MarginBottom > PrevMarginBottom)
+		wadSpr.BiggestFrame = waddleFrame;
 	
 	// frames with similar pixels!! fuck that we compress shit here!
 	// (11/23/25) - Apparently nevermind.... I MIGHT readd this in the future hrrrmm...

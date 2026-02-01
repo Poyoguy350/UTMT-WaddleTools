@@ -5,6 +5,7 @@
 
 using System.Linq;
 using System.Windows;
+using System.Collections;
 using System.Windows.Media;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
@@ -13,6 +14,7 @@ using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 using static UndertaleModTool.MainWindow;
 using UndertaleModLib.Util;
+using ImageMagick;
 
 #region Classes
 
@@ -334,6 +336,8 @@ StartImportButton.Click += (s, e) => {
 #endregion
 #region Execution
 
+// The texture masking part is just me randomly bullshitting some stuff idk anymor
+
 GraphicsSharpWindow.Show();
 await GraphicsSharpWindowTask.Task;
 if (ImportCancel) CustomScriptMessage("Import Cancelled!", "ImportGraphicsSharp");
@@ -341,10 +345,13 @@ else
 {
 	int LastTexturePageCount = Data.EmbeddedTextures.Count - 1;
 	int LastTexturePageItemCount = Data.TexturePageItems.Count - 1;
+	bool NoMasksForBasicRectangles = Data.IsVersionAtLeast(2022, 9);
+	bool BoundingBoxMasks = Data.IsVersionAtLeast(2024, 6);
 	
 	foreach (var SpritesGroup in GraphicsSharpQueue.GroupBy(Asset => Asset.TextureGroup)) {
 		Packer _Packer = new();
 		List<WaddleSpriteFrame> FramesQueue = new();
+		Dictionary<UndertaleSprite, PackerNode> MaskNodes = new();
 		
 		foreach (WaddleSprite Sprite in SpritesGroup)
 		{
@@ -352,20 +359,42 @@ else
 				case (WaddleSpriteType.Sprite): {
 					UndertaleSprite UTSprite = Data.Sprites.ByName(Sprite.Name);
 					
+					int _MarginLeft = (Sprite.BBoxMode == WaddleBBoxMode.FullImage) ? 0 : Sprite.MarginLeft;
+					int _MarginTop = (Sprite.BBoxMode == WaddleBBoxMode.FullImage) ? 0 : Sprite.MarginTop;
+					int _MarginRight = (Sprite.BBoxMode == WaddleBBoxMode.FullImage) ? ((int)Sprite.Width - 1) : Sprite.MarginRight;
+					int _MarginBottom = (Sprite.BBoxMode == WaddleBBoxMode.FullImage) ? ((int)Sprite.Height - 1) : Sprite.MarginBottom;
+					
 					// Create Sprite if it doesn't exist...
 					if (UTSprite == null) {
 						UTSprite = new();
 						UTSprite.Name = Data.Strings.MakeString(Sprite.Name);
+						UTSprite.SepMasks = Sprite.GenerateMasks ? UndertaleSprite.SepMaskType.Precise : UndertaleSprite.SepMaskType.AxisAlignedRect;
 						Data.Sprites.Add(UTSprite);
+					}
+					else {
+						UTSprite.SepMasks = Sprite.GenerateMasks ? UndertaleSprite.SepMaskType.Precise : UTSprite.SepMasks;
+						Sprite.ChangedSpriteDimensions = ((UTSprite.Width != Sprite.Width) || (UTSprite.Height != Sprite.Height));
+						if (Sprite.BBoxMode != WaddleBBoxMode.Manual) {
+							Sprite.GrewBoundingBox = (
+								_MarginLeft < UTSprite.MarginLeft ||
+								_MarginTop < UTSprite.MarginTop ||
+								_MarginRight > UTSprite.MarginRight ||
+								_MarginBottom > UTSprite.MarginBottom
+							);
+						}
+					}
+					
+					if (Sprite.BBoxMode != WaddleBBoxMode.Manual) {
+						UTSprite.MarginLeft = _MarginLeft;
+						UTSprite.MarginRight = _MarginRight;
+						UTSprite.MarginTop = _MarginTop;
+						UTSprite.MarginBottom = _MarginBottom;
 					}
 					
 					// Hawk tuah! update that thang...
                     UTSprite.Width = (uint)Sprite.Width;
                     UTSprite.Height = (uint)Sprite.Height;
-                    UTSprite.MarginLeft = Sprite.MarginLeft;
-                    UTSprite.MarginRight = Sprite.MarginRight;
-                    UTSprite.MarginTop = Sprite.MarginTop;
-                    UTSprite.MarginBottom = Sprite.MarginBottom;
+					UTSprite.BBoxMode = (uint)Sprite.BBoxMode;
                     UTSprite.GMS2PlaybackSpeedType = Sprite.GMS2PlaybackSpeedType;
                     UTSprite.GMS2PlaybackSpeed = Sprite.AnimationSpeed;
                     UTSprite.IsSpecialType = Sprite.Special;
@@ -426,7 +455,8 @@ else
 		foreach (PackerAtlas Atlas in _Packer.OutputAtlasses) {
 			UndertaleEmbeddedTexture NewTexture = new();
 			NewTexture.Name = new UndertaleString($"Texture {++LastTexturePageCount}");
-			NewTexture.TextureData.Image = GMImage.FromMagickImage(Atlas.CreateImage()).ConvertToPng();
+			MagickImage AtlasImage = Atlas.CreateImage();
+			NewTexture.TextureData.Image = GMImage.FromMagickImage(AtlasImage).ConvertToPng();
 			Data.EmbeddedTextures.Add(NewTexture);
 			
 			if (SpritesGroup.Key != null) {
@@ -462,6 +492,20 @@ else
 						SpriteEntry.Texture = NewPageItem;
 						
 						UTSprite.Textures[ImportingSprite.Frames.IndexOf(Node.Source)] = SpriteEntry; // stinky
+						
+						// I don't get what is going on with ImportGraphicsAdvanced.csx brahh ;-;
+						if (!NoMasksForBasicRectangles || ImportingSprite.GenerateMasks ||
+							UTSprite.SepMasks == UndertaleSprite.SepMaskType.Precise ||  // Change this if theres ever more SepMaskTypes
+							UTSprite.CollisionMasks.Count > 0) {
+							
+							if ((BoundingBoxMasks && ImportingSprite.GrewBoundingBox) || (!BoundingBoxMasks && ImportingSprite.ChangedSpriteDimensions) ||
+								(UTSprite.SepMasks == UndertaleSprite.SepMaskType.Precise && UTSprite.CollisionMasks.Count == 0)) {
+								
+								if (Node.Source == ImportingSprite.BiggestFrame)
+									MaskNodes[UTSprite] = Node;
+							}
+						}
+					
 						break;
 					}
 					case (WaddleSpriteType.Background): {
@@ -471,7 +515,48 @@ else
 					}
 				}
 			}
+			
+			IPixelCollection<byte> AtlasPixels = AtlasImage.GetPixels();
+			foreach ((UndertaleSprite MaskSprite, PackerNode MaskNode) in MaskNodes) {
+				MaskSprite.CollisionMasks.Clear();
+				MaskSprite.CollisionMasks.Add(MaskSprite.NewMaskEntry(Data));
+				(int MaskWidth, int MaskHeight) = MaskSprite.CalculateMaskDimensions(Data);
+				int MaskStride = ((MaskWidth + 7) / 8) * 8;
+	
+				BitArray MaskingBitArray = new BitArray(MaskStride * MaskHeight);
+				for (int y = 0; y < MaskHeight && y < MaskNode.Height; y++)
+				{
+					for (int x = 0; x < MaskWidth && x < MaskNode.Width; x++)
+					{
+						IMagickColor<byte> PixelColor = AtlasPixels.GetPixel(x + MaskNode.X, y + MaskNode.Y).ToColor();
+						if (BoundingBoxMasks)
+							MaskingBitArray[(y * MaskStride) + x] = (PixelColor.A > 0);
+						else
+							MaskingBitArray[((y + MaskNode.Source.TargetY) * MaskStride) + x + MaskNode.Source.TargetX] = (PixelColor.A > 0);
+					}
+				}
+				
+				BitArray TempBitArray = new BitArray(MaskingBitArray.Length);
+				for (int i = 0; i < MaskingBitArray.Length; i += 8)
+				{
+					for (int j = 0; j < 8; j++)
+					{
+						TempBitArray[j + i] = MaskingBitArray[-(j - 7) + i];
+					}
+				}
+	
+				int NumBytes = MaskingBitArray.Length / 8;
+				byte[] Bytes = new byte[NumBytes];
+				TempBitArray.CopyTo(Bytes, 0);
+				for (int i = 0; i < Bytes.Length; i++)
+					MaskSprite.CollisionMasks[0].Data[i] = Bytes[i];
+			}
+			
+			MaskNodes.Clear();
 		}
+		
+		
+		
 		
 		//_Packer.SaveAtlasses(Path.Combine(WADDLETOOLS_DIR, "PackerTest"));
 	}
