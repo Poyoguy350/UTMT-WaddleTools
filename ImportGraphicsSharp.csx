@@ -27,6 +27,8 @@ public class GameSpecificSpriteTemplate
 	public string SpriteSpecialVersionString;
 	public string SpriteGMS2PlaybackSpeedTypeString;
 	public string SpritePlaybackSpeedString;
+	public string SpriteGenerateMaskString;
+	public string SpriteBBoxModeString;
 	
 	public static string ReplaceMultiple(string BaseString, Dictionary<string, object> ReplaceDict)
 	{
@@ -58,6 +60,33 @@ public class GameSpecificSpriteTemplate
 			default:
 			{
 				return Enum.Parse<AnimSpeedType>(await CSharpScript.EvaluateAsync<string>(StringBase));
+				break;
+			}
+		}
+	}
+	
+	public async static Task<WaddleBBoxMode> ParseBBoxMode(string StringBase)
+	{
+		switch (StringBase)
+		{
+			case ("None"):
+			{
+				return WaddleBBoxMode.None;
+				break;
+			}
+			case ("FullImage"):
+			{
+				return WaddleBBoxMode.FullImage;
+				break;
+			}
+			case ("Manual"):
+			{
+				return WaddleBBoxMode.Manual;
+				break;
+			}
+			default:
+			{
+				return Enum.Parse<WaddleBBoxMode>(await CSharpScript.EvaluateAsync<string>(StringBase));
 				break;
 			}
 		}
@@ -162,8 +191,13 @@ async public void ImportSpriteButton_Click(object sender, RoutedEventArgs ev)
 				string SpecialVersionFixed = GameSpecificSpriteTemplate.ReplaceMultiple(Template.SpriteSpecialVersionString, TemplateGlobals);
 				string SpriteGMS2PlaybackSpeedTypeString = GameSpecificSpriteTemplate.ReplaceMultiple(Template.SpriteGMS2PlaybackSpeedTypeString, TemplateGlobals);
 				string SpritePlaybackSpeedStringFixed = GameSpecificSpriteTemplate.ReplaceMultiple(Template.SpritePlaybackSpeedString, TemplateGlobals);
+				string SpriteBBoxModeStringFixed = GameSpecificSpriteTemplate.ReplaceMultiple(Template.SpriteBBoxModeString, TemplateGlobals);
+				string SpriteGenerateMaskStringFixed = GameSpecificSpriteTemplate.ReplaceMultiple(Template.SpriteGenerateMaskString, TemplateGlobals);
+				
 				sprite.OriginX = await CSharpScript.EvaluateAsync<int>(OffsetXFixed);
 				sprite.OriginY = await CSharpScript.EvaluateAsync<int>(OffsetYFixed);
+				sprite.GenerateMasks = await CSharpScript.EvaluateAsync<bool>(SpriteGenerateMaskStringFixed);
+				sprite.BBoxMode = await GameSpecificSpriteTemplate.ParseBBoxMode(SpriteBBoxModeStringFixed);
 				
 				if (Data.IsGameMaker2())
 				{
@@ -308,6 +342,8 @@ foreach (string SpecificData in Directory.GetFiles(WADDLETOOLS_IMPORTGRAPHICS_TE
 	NewTemplate.SpriteSpecialVersionString = Root["SpriteTemplate"]["SpecialVersion"].ToString();
 	NewTemplate.SpriteGMS2PlaybackSpeedTypeString = Root["SpriteTemplate"]["GMS2PlaybackSpeedType"].ToString();
 	NewTemplate.SpritePlaybackSpeedString = Root["SpriteTemplate"]["AnimationSpeed"].ToString();
+	NewTemplate.SpriteBBoxModeString = Root["SpriteTemplate"]["BoundingBoxMode"].ToString();
+	NewTemplate.SpriteGenerateMaskString = Root["SpriteTemplate"]["GenerateMask"].ToString();
 	
 	string ConditionStringFixed = GameSpecificSpriteTemplate.ReplaceMultiple(NewTemplate.ConditionString, new() {
 		{"DisplayName", Data.GeneralInfo.DisplayName}, {"FileName", Data.GeneralInfo.FileName}

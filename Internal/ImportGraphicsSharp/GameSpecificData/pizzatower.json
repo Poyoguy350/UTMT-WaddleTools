@@ -5,10 +5,9 @@
 		"OriginY": "${SpriteHeight} / 2",
 		"Special": true,
 		"SpecialVersion": 3,
-		"BoundingBoxMode": "Manual",
+		"BoundingBoxMode": "None",
 		"GMS2PlaybackSpeedType": "FramesPerGameFrame",
 		"AnimationSpeed": 1.0,
-		"GenerateMask": false,
-		"BBoxMode": 0
+		"GenerateMask": false
 	}
 }
