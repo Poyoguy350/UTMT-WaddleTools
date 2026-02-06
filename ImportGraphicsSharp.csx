@@ -591,9 +591,6 @@ else
 			MaskNodes.Clear();
 		}
 		
-		
-		
-		
 		//_Packer.SaveAtlasses(Path.Combine(WADDLETOOLS_DIR, "PackerTest"));
 	}
 }
