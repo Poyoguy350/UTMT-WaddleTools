@@ -12,13 +12,13 @@ With a interactable interface inspired to GameMaker's Sprite Editor! \
 
 (***PROTIP:*** Being in a sprite tab automatically launches the editor without prompting you to type a sprite name!)
 
-<img width="844" height="329" alt="SpriteEditorStandalone.csx Showcase!" src="Images/SpriteEditorStandalone.png" />
+<img width="480" height="320" alt="SpriteEditorStandalone.csx Showcase!" src="Images/SpriteEditorStandalone.png" />
 
 ### ImportGraphicsSharp.csx:
 An advanced graphics importer script! An overhaul of the ImportGraphics offering more configurable options!
 
-<img width="811" height="828" alt="ImportGraphicsSharp.csx Showcase 1!" src="Images/ImportGraphicsSharp-1.png" />
-<img width="811" height="828" alt="ImportGraphicsSharp.csx Showcase 2!" src="Images/ImportGraphicsSharp-2.png" />
+<img width="500" height="525" alt="ImportGraphicsSharp.csx Showcase 1!" src="Images/ImportGraphicsSharp-1.png" />
+<img width="500" height="525" alt="ImportGraphicsSharp.csx Showcase 2!" src="Images/ImportGraphicsSharp-2.png" />
 
 ### ReduceTextures.csx (WORK IN PROGRESS! NOT INCLUDED IN ANY RELEASES!!):
 Script meant to clean off unreferenced Embedded Textures or Page Items! \
