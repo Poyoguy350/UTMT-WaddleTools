@@ -1,0 +1,6 @@
+# Make sure cache doesn't get uploaded to repo </33
+# And to whoever's reading this, hopefully when you're clearing up the cache you DON'T delete this file!
+# (only really applies if you're comitting contributions to the repo idk)
+
+*
+!.gitignore
